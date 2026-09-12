@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Admin Dashboard
+    </title>
+
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="dashboard-layout">
+
+
+    <!-- =================================================
+         SIDEBAR
+         ================================================= -->
+
+    <aside class="sidebar">
+
+
+        <div class="brand">
+
+            <div class="brand-logo">
+                SA
+            </div>
+
+
+            <div>
+
+                <h2>
+                    Smart Attendance
+                </h2>
+
+
+                <span>
+                    University Portal
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- MENU -->
+
+        <nav class="sidebar-menu">
+
+            <a
+                href="#"
+                class="active"
+            >
+                📊 Dashboard
+            </a>
+
+
+            <a href="#">
+                🏢 Departments
+            </a>
+
+
+            <a href="#">
+                📚 Courses & Subjects
+            </a>
+
+
+            <a href="#">
+                🎓 Students
+            </a>
+
+
+            <a href="#">
+                👨‍🏫 Faculty
+            </a>
+
+
+            <a href="#">
+                🧠 Face Biometrics
+            </a>
+
+
+            <a href="#">
+                📅 Attendance Sessions
+            </a>
+
+
+            <a href="#">
+                📈 Reports & Analytics
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+            <a
+                href="{{ url_for('logout') }}"
+                class="logout-button"
+            >
+                Logout
+            </a>
+
+        </div>
+
+
+    </aside>
+
+
+    <!-- =================================================
+         MAIN CONTENT
+         ================================================= -->
+
+    <main class="dashboard-main">
+
+
+        <!-- TOP BAR -->
+
+        <div class="dashboard-topbar">
+
+
+            <div class="page-title">
+
+                <h1>
+                    Admin Dashboard
+                </h1>
+
+
+                <p>
+                    Manage your university attendance ecosystem
+                </p>
+
+            </div>
+
+
+            <div class="user-area">
+
+
+                <div class="user-profile">
+
+
+                    <div class="user-avatar">
+                        A
+                    </div>
+
+
+                    <div class="user-details">
+
+                        <strong>
+                            {{ username }}
+                        </strong>
+
+
+                        <span>
+                            System Administrator
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             STATISTICS
+             ================================================= -->
+
+        <div class="stats-grid">
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    Total Students
+                </div>
+
+
+                <div class="stat-value">
+                    --
+                </div>
+
+
+                <div class="stat-icon">
+                    🎓
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    Total Faculty
+                </div>
+
+
+                <div class="stat-value">
+                    --
+                </div>
+
+
+                <div class="stat-icon">
+                    👨‍🏫
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    Active Courses
+                </div>
+
+
+                <div class="stat-value">
+                    --
+                </div>
+
+
+                <div class="stat-icon">
+                    📚
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    Today's Sessions
+                </div>
+
+
+                <div class="stat-value">
+                    --
+                </div>
+
+
+                <div class="stat-icon">
+                    📅
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             MANAGEMENT SECTION
+             ================================================= -->
+
+        <div class="section-title">
+
+            <h2>
+                System Management
+            </h2>
+
+
+            <p>
+                Configure and manage your attendance platform
+            </p>
+
+        </div>
+
+
+        <div class="dashboard-grid">
+
+
+            <!-- DEPARTMENTS -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    🏢 Departments
+                </h2>
+
+
+                <p>
+
+                    Create branches and departments
+                    for your university.
+
+                </p>
+
+
+                <a
+                    href="#"
+                    class="dashboard-action"
+                >
+                    Manage Departments →
+                </a>
+
+            </div>
+
+
+            <!-- COURSES -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    📚 Courses & Subjects
+                </h2>
+
+
+                <p>
+
+                    Create courses, semesters,
+                    subjects and curriculum.
+
+                </p>
+
+
+                <a
+                    href="#"
+                    class="dashboard-action"
+                >
+                    Manage Courses →
+                </a>
+
+            </div>
+
+
+            <!-- STUDENTS -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    🎓 Student Management
+                </h2>
+
+
+                <p>
+
+                    Register students, assign courses
+                    and configure face biometrics.
+
+                </p>
+
+
+                <a
+                    href="#"
+                    class="dashboard-action"
+                >
+                    Manage Students →
+                </a>
+
+            </div>
+
+
+            <!-- FACULTY -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    👨‍🏫 Faculty Management
+                </h2>
+
+
+                <p>
+
+                    Register faculty and assign
+                    departments and subjects.
+
+                </p>
+
+
+                <a
+                    href="#"
+                    class="dashboard-action"
+                >
+                    Manage Faculty →
+                </a>
+
+            </div>
+
+
+            <!-- BIOMETRIC -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    🧠 Face Biometrics
+                </h2>
+
+
+                <p>
+
+                    Configure and manage
+                    student face recognition data.
+
+                </p>
+
+
+                <a
+                    href="#"
+                    class="dashboard-action"
+                >
+                    Manage Biometrics →
+                </a>
+
+            </div>
+
+
+            <!-- ATTENDANCE -->
+
+            <div class="dashboard-card">
+
+                <h2>
+                    📷 Attendance System
+                </h2>
+
+
+                <p>
+
+                    Open the AI biometric
+                    attendance camera system.
+
+                </p>
+
+
+                <a
+                    href="{{ url_for('attendance_system') }}"
+                    class="dashboard-action"
+                >
+                    Open Attendance System →
+                </a>
+
+            </div>
+
+
+        </div>
+
+
+    </main>
+
+
+</div>
+
+
+</body>
+
+</html>

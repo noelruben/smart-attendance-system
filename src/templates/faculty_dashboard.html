@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Faculty Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <div class="dashboard-container">
+
+        <header class="dashboard-header">
+
+            <div>
+
+                <h1>Faculty Dashboard</h1>
+
+                <p>
+                    Welcome, {{ username }}
+                </p>
+
+            </div>
+
+
+            <a
+                href="{{ url_for('logout') }}"
+                class="logout-button"
+            >
+                Logout
+            </a>
+
+        </header>
+
+
+        <div class="dashboard-grid">
+
+            <div class="dashboard-card">
+
+                <h2>Today's Lectures</h2>
+
+                <p>
+                    View your scheduled lectures.
+                </p>
+
+            </div>
+
+
+            <div class="dashboard-card">
+
+                <h2>Start Attendance</h2>
+
+                <p>
+                    Open the biometric attendance
+                    system during the attendance window.
+                </p>
+
+                <a
+                    href="{{ url_for('attendance_system') }}"
+                    class="dashboard-action"
+                >
+                    Open Camera System
+                </a>
+
+            </div>
+
+
+            <div class="dashboard-card">
+
+                <h2>Attendance History</h2>
+
+                <p>
+                    View attendance records
+                    for your lectures.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

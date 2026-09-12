@@ -5,7 +5,25 @@ import cv2
 import sqlite3
 import shutil
 import pickle
-from flask import Flask, render_template, Response, request, jsonify, send_file
+from flask import (
+    Flask,
+    render_template,
+    Response,
+    request,
+    jsonify,
+    send_file,
+    redirect,
+    url_for,
+    session,
+    flash
+)
+from src.auth import (
+    authenticate_user,
+    login_user,
+    logout_user,
+    login_required,
+    role_required
+)
 
 # Add project root directory to path for imports
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -23,11 +41,19 @@ from src.face_recognition_module import load_known_faces, process_and_recognize_
 from src.attendance import load_today_attendance_cache, log_attendance_for_student, get_current_date_str
 from src.export import export_attendance_to_csv
 
+# Directory where web_server.py is located
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+
 app = Flask(
     __name__,
-    template_folder=os.path.join(PROJECT_ROOT, "templates"),
-    static_folder=os.path.join(PROJECT_ROOT, "static"),
+    template_folder=os.path.join(SRC_DIR, "templates"),
+    static_folder=os.path.join(SRC_DIR, "static"),
     static_url_path="/static"
+)
+
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "development-secret-key-change-this"
 )
 
 # Global camera and registration variables
@@ -138,10 +164,158 @@ def generate_attendance_frames():
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
 
 # =========================================================================
-# WEB APIS & ENDPOINTS
+# AUTHENTICATION & ROLE BASED ROUTES
 # =========================================================================
+
 @app.route("/")
 def home():
+
+    if session.get("user_id"):
+        return redirect(
+            url_for("dashboard")
+        )
+
+    return render_template("role_selection.html")
+
+
+@app.route("/login/<role>", methods=["GET", "POST"])
+def login(role):
+
+    role = role.upper()
+
+    allowed_roles = [
+        "ADMIN",
+        "FACULTY",
+        "STUDENT"
+    ]
+
+    if role not in allowed_roles:
+        return redirect(
+            url_for("home")
+        )
+
+    if request.method == "POST":
+
+        username = request.form.get(
+            "username",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        user = authenticate_user(
+            username,
+            password,
+            expected_role=role
+        )
+
+        if not user:
+
+            flash(
+                "Invalid username, password, or account role.",
+                "danger"
+            )
+
+            return render_template(
+                "login.html",
+                role=role
+            )
+
+        login_user(user)
+
+        return redirect(
+            url_for("dashboard")
+        )
+
+    return render_template(
+        "login.html",
+        role=role
+    )
+
+
+@app.route("/logout")
+def logout():
+
+    logout_user()
+
+    flash(
+        "You have been logged out successfully.",
+        "success"
+    )
+
+    return redirect(
+        url_for("home")
+    )
+
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+
+    role = session.get("role")
+
+    if role == "ADMIN":
+
+        return redirect(
+            url_for("admin_dashboard")
+        )
+
+    elif role == "FACULTY":
+
+        return redirect(
+            url_for("faculty_dashboard")
+        )
+
+    elif role == "STUDENT":
+
+        return redirect(
+            url_for("student_dashboard")
+        )
+
+    logout_user()
+
+    return redirect(
+        url_for("home")
+    )
+
+
+@app.route("/admin/dashboard")
+@role_required("ADMIN")
+def admin_dashboard():
+
+    return render_template(
+        "admin_dashboard.html",
+        username=session.get("username")
+    )
+
+
+@app.route("/faculty/dashboard")
+@role_required("FACULTY")
+def faculty_dashboard():
+
+    return render_template(
+        "faculty_dashboard.html",
+        username=session.get("username")
+    )
+
+
+@app.route("/student/dashboard")
+@role_required("STUDENT")
+def student_dashboard():
+
+    return render_template(
+        "student_dashboard.html",
+        username=session.get("username")
+    )
+
+
+@app.route("/attendance-system")
+@role_required("ADMIN", "FACULTY")
+def attendance_system():
+
     return render_template("index.html")
 
 @app.route("/api/stats")

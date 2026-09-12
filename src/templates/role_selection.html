@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Smart Attendance System</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+    <div class="login-page">
+
+        <div class="login-card">
+
+            <h1>
+                Smart Attendance System
+            </h1>
+
+
+            <p class="subtitle">
+
+                AI-powered biometric attendance
+                management platform
+
+            </p>
+
+
+            <div class="role-buttons">
+
+
+                <!-- ADMIN -->
+
+                <a
+                    href="{{ url_for('login', role='admin') }}"
+                    class="role-button admin"
+                >
+
+                    <div>
+
+                        <div class="role-icon">
+                            🛡
+                        </div>
+
+
+                        <h2>
+                            Admin Portal
+                        </h2>
+
+
+                        <p>
+
+                            Manage departments,
+                            courses, faculty,
+                            students and the
+                            complete attendance system.
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="portal-action">
+
+                        Access Admin Portal →
+
+                    </div>
+
+                </a>
+
+
+                <!-- FACULTY -->
+
+                <a
+                    href="{{ url_for('login', role='faculty') }}"
+                    class="role-button faculty"
+                >
+
+                    <div>
+
+                        <div class="role-icon">
+                            👨‍🏫
+                        </div>
+
+
+                        <h2>
+                            Faculty Portal
+                        </h2>
+
+
+                        <p>
+
+                            Manage lectures,
+                            students and start
+                            AI biometric attendance
+                            sessions.
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="portal-action">
+
+                        Access Faculty Portal →
+
+                    </div>
+
+                </a>
+
+
+                <!-- STUDENT -->
+
+                <a
+                    href="{{ url_for('login', role='student') }}"
+                    class="role-button student"
+                >
+
+                    <div>
+
+                        <div class="role-icon">
+                            🎓
+                        </div>
+
+
+                        <h2>
+                            Student Portal
+                        </h2>
+
+
+                        <p>
+
+                            View your courses,
+                            attendance percentage
+                            and lecture attendance
+                            history.
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="portal-action">
+
+                        Access Student Portal →
+
+                    </div>
+
+                </a>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
