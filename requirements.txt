@@ -1,0 +1,5 @@
+setuptools<=80.10.2
+opencv-python
+face-recognition
+numpy
+pandas

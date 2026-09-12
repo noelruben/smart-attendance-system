@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Smart Attendance System...</title>
+    <!-- Automatic Meta Redirect to the Flask Python Server on port 5000 -->
+    <meta http-equiv="refresh" content="0; url=http://127.0.0.1:5000">
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f9fafb;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 400px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #3b82f6;
+        }
+        p {
+            color: #9ca3af;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        a {
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <!-- JavaScript Fallback Redirect -->
+    <script>
+        window.location.href = "http://127.0.0.1:5000";
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>SmartScan Portal</h2>
+        <div class="spinner"></div>
+        <p>Redirecting to secure local Python server at port 5000...</p>
+        <p>Make sure you have started your server using <code>python src/main.py</code> in the terminal first!</p>
+        <p>If you are not redirected, <a href="http://127.0.0.1:5000">click here to access the dashboard</a>.</p>
+    </div>
+</body>
+</html>

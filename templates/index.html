@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance System - Dashboard</title>
+    <!-- Google Fonts - Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Portal Locked Overlay Screen -->
+    <div class="portal-lock-overlay" id="portal-lock-screen" style="display: none;">
+        <div class="lock-card">
+            <div class="lock-icon-container">
+                <i data-lucide="lock-keyhole"></i>
+            </div>
+            <h2>ERP Portal Locked</h2>
+            <p>The institutional ERP portal automatically closes daily at 5:00 PM and reopens the next morning at 8:00 AM.</p>
+            <span class="lock-hours">Operation Hours: 08:00 AM - 05:00 PM</span>
+            
+            <div class="simulation-alert-box">
+                <p><i data-lucide="help-circle"></i> Presentation Mode: Toggle the "Sim 5PM Lock" in the top header to unlock.</p>
+                <button class="btn btn-primary" id="btn-lock-bypass" style="margin-top: 15px; width: 100%; border-radius: 8px; padding: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; cursor: pointer; border: none; background-color: var(--accent); color: white;">
+                    <i data-lucide="unlock"></i> Bypass Lock (Presentation Mode)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon">
+                    <i data-lucide="scan-face"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>SmartScan</h1>
+                    <span>Attendance v1.1</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <ul>
+                    <li class="menu-item active" data-target="dashboard-tab">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Dashboard</span>
+                    </li>
+                    <li class="menu-item" data-target="register-tab">
+                        <i data-lucide="user-plus"></i>
+                        <span>Register Student</span>
+                    </li>
+                    <li class="menu-item" data-target="train-tab">
+                        <i data-lucide="cpu"></i>
+                        <span>Train Encodings</span>
+                    </li>
+                    <li class="menu-item" data-target="scanner-tab">
+                        <i data-lucide="webcam"></i>
+                        <span>Live Scanner</span>
+                    </li>
+                    <li class="menu-item" data-target="teacher-tab">
+                        <i data-lucide="book-open"></i>
+                        <span>Teacher Portal</span>
+                    </li>
+                    <li class="menu-item" data-target="erp-tab">
+                        <i data-lucide="graduation-cap"></i>
+                        <span>Student ERP</span>
+                    </li>
+                    <li class="menu-item" data-target="records-tab">
+                        <i data-lucide="clipboard-list"></i>
+                        <span>Attendance Logs</span>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="developer-info">
+                    <i data-lucide="info"></i>
+                    <div>
+                        <p>B.Tech Mini-Project</p>
+                        <span>CV & Biometrics</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Top Status Bar -->
+            <header class="top-bar">
+                <div class="welcome-msg">
+                    <h2>Smart Attendance Panel</h2>
+                    <p>Local Biometric Scanner Dashboard</p>
+                </div>
+                <div class="top-bar-controls">
+                    <!-- Presentation Lock Simulation Toggle -->
+                    <div class="sim-toggle-wrapper">
+                        <label class="sim-switch">
+                            <input type="checkbox" id="sim-portal-lock">
+                            <span class="sim-slider"></span>
+                        </label>
+                        <span class="sim-label"><i data-lucide="clock"></i> Sim 5PM Lock</span>
+                    </div>
+                    
+                    <div class="system-status">
+                        <span class="status-indicator online"></span>
+                        <span>Offline Engine: Active</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Workspace Tabs -->
+            <div class="tab-container">
+                
+                <!-- TAB 1: DASHBOARD -->
+                <section id="dashboard-tab" class="tab-content active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon purple">
+                                <i data-lucide="users"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="stat-registered-count">0</h3>
+                                <p>Registered Students</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon emerald">
+                                <i data-lucide="user-check"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3 id="stat-present-count">0</h3>
+                                <p>Marked Today</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i data-lucide="shield-check"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h3>100%</h3>
+                                <p>Biometric Privacy</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-panel">
+                        <div class="panel-header">
+                            <div class="panel-title-group">
+                                <i data-lucide="graduation-cap"></i>
+                                <h3>Enrolled Student Registry</h3>
+                            </div>
+                            <button class="btn btn-secondary btn-icon-only" id="btn-refresh-students" title="Refresh registry">
+                                <i data-lucide="rotate-cw"></i>
+                            </button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table" id="table-students">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Full Name</th>
+                                        <th>Registered Date</th>
+                                        <th style="text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                            <div class="empty-state" id="students-empty-state" style="display: none;">
+                                <i data-lucide="folder-open"></i>
+                                <p>No students registered yet. Navigate to the 'Register Student' tab to start.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 2: REGISTER STUDENT -->
+                <section id="register-tab" class="tab-content">
+                    <div class="two-column-layout">
+                        <div class="content-panel form-panel">
+                            <div class="panel-header">
+                                <div class="panel-title-group">
+                                    <i data-lucide="user-plus"></i>
+                                    <h3>Student Enrollment</h3>
+                                </div>
+                            </div>
+                            <form id="form-register" class="registration-form">
+                                <div class="form-group">
+                                    <label for="reg-student-id">Student ID / Roll No:</label>
+                                    <input type="text" id="reg-student-id" placeholder="e.g. 23" required>
+                                    <span class="help-text">Enter a unique identifier.</span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="reg-student-name">Full Name:</label>
+                                    <input type="text" id="reg-student-name" placeholder="e.g. Lakshmi" required>
+                                    <span class="help-text">Use legal character name.</span>
+                                </div>
+                                
+                                <div class="button-group">
+                                    <button type="button" class="btn btn-primary" id="btn-start-reg-cam">
+                                        <i data-lucide="camera"></i> Start Camera
+                                    </button>
+                                    <button type="button" class="btn btn-success" id="btn-capture-face" disabled>
+                                        <i data-lucide="aperture"></i> Capture Face
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="capture-progress-card">
+                                <h4>Captures Completed</h4>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" id="reg-progress-fill" style="width: 0%;"></div>
+                                </div>
+                                <span class="progress-text" id="reg-progress-text">Captured: 0 / 5</span>
+                            </div>
+
+                            <div class="web-log-box" id="reg-log-box">
+                                <div class="log-header">
+                                    <span>Validation & Capture Logs:</span>
+                                </div>
+                                <div class="log-content" id="reg-logs">
+                                    <p class="log-placeholder">Enter details and click 'Start Camera' to begin...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content-panel cam-panel">
+                            <div class="panel-header">
+                                <div class="panel-title-group">
+                                    <i data-lucide="video"></i>
+                                    <h3>Webcam Capture View</h3>
+                                </div>
+                            </div>
+                            <div class="video-container" id="reg-video-container">
+                                <div class="video-placeholder" id="reg-cam-placeholder">
+                                    <i data-lucide="webcam"></i>
+                                    <p>Webcam stream is inactive</p>
+                                </div>
+                                <img src="" id="reg-video-stream" alt="Registration Feed" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 3: TRAIN ENCODINGS -->
+                <section id="train-tab" class="tab-content">
+                    <div class="content-panel main-width-card">
+                        <div class="panel-header">
+                            <div class="panel-title-group">
+                                <i data-lucide="cpu"></i>
+                                <h3>Train Face Embeddings</h3>
+                            </div>
+                        </div>
+                        <div class="card-intro">
+                            <p>Training processes raw facial images into a mathematical 128-dimensional representation vector.</p>
+                            <p>Running incremental training scans for newly registered students and appends them to your face database, saving processing time.</p>
+                        </div>
+                        
+                        <div class="button-group font-margin-top">
+                            <button class="btn btn-primary" id="btn-run-train">
+                                <i data-lucide="play"></i> Run Incremental Training
+                            </button>
+                            <button class="btn btn-secondary" id="btn-force-train">
+                                <i data-lucide="refresh-cw"></i> Force Regenerate All
+                            </button>
+                        </div>
+
+                        <div class="terminal-log-box">
+                            <div class="terminal-header">
+                                <span class="term-dot red"></span>
+                                <span class="term-dot yellow"></span>
+                                <span class="term-dot green"></span>
+                                <span class="term-title">Console Output Logs</span>
+                            </div>
+                            <div class="terminal-body" id="train-logs">
+                                <p class="term-line">> Ready to start embedding generation process...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 4: LIVE SCANNER -->
+                <section id="scanner-tab" class="tab-content">
+                    <div class="two-column-layout">
+                        <div class="content-panel cam-panel-wide">
+                            <div class="panel-header">
+                                <div class="panel-title-group">
+                                    <i data-lucide="eye"></i>
+                                    <h3>Real-Time Facial Recognition</h3>
+                                </div>
+                                <div class="badge" id="scanner-badge">INACTIVE</div>
+                            </div>
+                            <div class="video-container" id="scanner-video-container">
+                                <div class="video-placeholder" id="scanner-cam-placeholder">
+                                    <i data-lucide="webcam"></i>
+                                    <p>Scanner camera is inactive</p>
+                                </div>
+                                <img src="" id="scanner-video-stream" alt="Live Scanner Feed" style="display: none;">
+                            </div>
+                            <div class="panel-footer-actions">
+                                <button class="btn btn-primary" id="btn-start-scanner">
+                                    <i data-lucide="play"></i> Start Scanning
+                                </button>
+                                <button class="btn btn-danger" id="btn-stop-scanner" disabled>
+                                    <i data-lucide="square"></i> Stop Scanner
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="content-panel log-panel">
+                            <div class="panel-header">
+                                <div class="panel-title-group">
+                                    <i data-lucide="history"></i>
+                                    <h3>Today's Session Logs</h3>
+                                </div>
+                            </div>
+                            <div class="session-log-list" id="session-logs-container">
+                                <div class="session-log-placeholder" id="session-log-empty">
+                                    <i data-lucide="list-todo"></i>
+                                    <p>Logs will update here when faces are detected and attendance is recorded.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 5: TEACHER PORTAL -->
+                <section id="teacher-tab" class="tab-content">
+                    <div class="content-panel">
+                        <!-- Filters Header -->
+                        <div class="toolbar-filters">
+                            <div class="filter-group">
+                                <label for="teacher-subject"><i data-lucide="book-open"></i> Subject / Lecture:</label>
+                                <select id="teacher-subject" class="erp-select">
+                                    <option value="INF45011">INF45011 - Computer Vision (CV)</option>
+                                    <option value="INF45021">INF45021 - AI & Machine Learning</option>
+                                    <option value="INF45022">INF45022 - Deep Learning (DL)</option>
+                                    <option value="INF45112">INF45112 - Data Science & NLP</option>
+                                    <option value="CVLAB">CVLAB - Computer Vision Lab</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="teacher-date"><i data-lucide="calendar"></i> Date:</label>
+                                <div class="date-input-group">
+                                    <input type="text" id="teacher-date" placeholder="DD-MM-YYYY">
+                                    <button class="btn btn-secondary btn-small" id="btn-teacher-today">Today</button>
+                                </div>
+                            </div>
+                            <div class="filter-buttons">
+                                <button class="btn btn-primary" id="btn-load-class-list">
+                                    <i data-lucide="users"></i> Load Students List
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="panel-header border-top-panel">
+                            <div class="panel-title-group">
+                                <i data-lucide="user-check"></i>
+                                <h3>Lecture Attendance Sheet</h3>
+                            </div>
+                            <span class="attendance-notice"><i data-lucide="alert-triangle"></i> Names are blurred if student has no Face Punch today.</span>
+                        </div>
+
+                        <!-- Class Attendance Table -->
+                        <div class="table-wrapper">
+                            <table class="data-table" id="table-teacher-attendance">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Student Name</th>
+                                        <th style="text-align: center;">Daily Face Punch</th>
+                                        <th style="text-align: center;">Lecture Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" class="text-center-placeholder">Select parameters and click 'Load Students List'</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="panel-footer-actions text-right" style="justify-content: flex-end;">
+                            <button class="btn btn-success" id="btn-submit-subject-attendance" disabled>
+                                <i data-lucide="save"></i> Submit Subject Attendance
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 6: STUDENT ERP -->
+                <section id="erp-tab" class="tab-content">
+                    <div class="content-panel">
+                        <!-- Student Selector Toolbar -->
+                        <div class="toolbar-filters">
+                            <div class="filter-group" style="flex-grow: 1;">
+                                <label for="erp-student-select"><i data-lucide="user"></i> Select Student:</label>
+                                <select id="erp-student-select" class="erp-select" style="max-width: 350px;">
+                                    <option value="">-- Choose Student --</option>
+                                    <!-- Dynamic list loaded via API -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- ERP Student Information Card -->
+                        <div class="erp-student-card" id="erp-student-info-card" style="display: none;">
+                            <div class="erp-info-grid">
+                                <div><strong>PRN No :</strong> <span id="erp-info-prn">-</span></div>
+                                <div><strong>Course Name :</strong> <span>B.Tech CSE Specialisation in AI and Machine Learning</span></div>
+                                <div><strong>Student Name :</strong> <span id="erp-info-name">-</span></div>
+                                <div><strong>Semester :</strong> <span class="badge active">Semester - 5</span></div>
+                            </div>
+                        </div>
+
+                        <div class="erp-grids-layout" id="erp-data-grids" style="display: none; margin-top: 25px;">
+                            <!-- Left: Subject Summary List -->
+                            <div class="erp-panel-left">
+                                <div class="erp-sub-header">
+                                    <h4>Subject List</h4>
+                                </div>
+                                <div class="table-wrapper">
+                                    <table class="erp-table" id="table-erp-summary">
+                                        <thead>
+                                            <tr>
+                                                <th>Appeared in Exam</th>
+                                                <th>Subject Code</th>
+                                                <th>Total Lectures</th>
+                                                <th>Present</th>
+                                                <th>Attendance %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Right: Attendance Grid Matrix -->
+                            <div class="erp-panel-right">
+                                <div class="erp-sub-header">
+                                    <h4>View Attendance Grid</h4>
+                                </div>
+                                <div class="table-wrapper">
+                                    <table class="erp-matrix-table" id="table-erp-matrix">
+                                        <thead>
+                                            <tr>
+                                                <th>Subject/Date</th>
+                                                <th>Day</th>
+                                                <th>INF45011</th>
+                                                <th>INF45021</th>
+                                                <th>INF45022</th>
+                                                <th>INF45112</th>
+                                                <th>CVLAB</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 7: VIEW LOGS -->
+                <section id="records-tab" class="tab-content">
+                    <div class="content-panel">
+                        <div class="toolbar-filters">
+                            <div class="filter-group">
+                                <label for="filter-search"><i data-lucide="search"></i> Search ID/Name:</label>
+                                <input type="text" id="filter-search" placeholder="e.g. Lakshmi">
+                            </div>
+                            <div class="filter-group">
+                                <label for="filter-date"><i data-lucide="calendar"></i> Date (DD-MM-YYYY):</label>
+                                <div class="date-input-group">
+                                    <input type="text" id="filter-date" placeholder="18-08-2026">
+                                    <button class="btn btn-secondary btn-small" id="btn-filter-today">Today</button>
+                                </div>
+                            </div>
+                            <div class="filter-buttons">
+                                <button class="btn btn-primary" id="btn-apply-filters">
+                                    <i data-lucide="filter"></i> Filter
+                                </button>
+                                <button class="btn btn-secondary" id="btn-clear-filters">
+                                    <i data-lucide="x"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="panel-header border-top-panel">
+                            <div class="panel-title-group">
+                                <i data-lucide="clipboard-list"></i>
+                                <h3>Attendance Register Data (Gate Face Punches)</h3>
+                            </div>
+                            <button class="btn btn-success" id="btn-export-records">
+                                <i data-lucide="download"></i> Export Filtered to CSV
+                            </button>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table" id="table-records">
+                                <thead>
+                                    <tr>
+                                        <th>Record ID</th>
+                                        <th>Student ID</th>
+                                        <th>Student Name</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                            <div class="empty-state" id="records-empty-state" style="display: none;">
+                                <i data-lucide="clipboard-x"></i>
+                                <p>No attendance logs matched your filter parameters.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Script imports -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

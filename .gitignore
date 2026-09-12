@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.venv/
+
+# Database
+database/attendance.db
+*.db
+
+# Face encodings
+encodings/encodings.pkl
+*.pkl
+
+# Face datasets / biometric data
+dataset/*
+!dataset/.gitkeep
+
+# Generated exports
+exports/*.csv
+
+# Environment / secrets
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini

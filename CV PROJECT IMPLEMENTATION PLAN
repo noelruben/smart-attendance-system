@@ -1,0 +1,143 @@
+# Implementation Plan - Smart Attendance System Using Face Recognition and Face Embeddings
+
+This project is a 3rd-year B.Tech Computer Science / AI & ML micro-project. It implements a webcam-based smart attendance system using OpenCV, the `face_recognition` library (pre-trained face embeddings), SQLite3, and a Tkinter GUI. It runs fully offline.
+
+## System Architecture & Workflow
+
+The system is organized into modular Python files:
+1. **Database Module (`database.py`)**: Manages SQLite tables for registering students and recording attendance.
+2. **Registration Module (`register_student.py`)**: Captures 5–10 webcam frames of a student, validates that exactly one clear face is present, and saves images to `dataset/`.
+3. **Encoding Module (`generate_encodings.py`)**: Scans `dataset/`, extracts 128-dimensional face embeddings for each image using `face_recognition`, and saves them to `encodings/encodings.pkl` (only updating new students to avoid redundant processing).
+4. **Recognition & Matching Module (`face_recognition_module.py`)**: Compares webcam face encodings against known encodings using Euclidean distance (face distance) with a configurable threshold (`TOLERANCE = 0.5`).
+5. **Attendance Logger (`attendance.py`)**: Handles the marking of attendance in the database once per day per student, with UI alerts to prevent double-marking.
+6. **GUI Module (`gui.py`)**: A professional Tkinter GUI providing student registration controls, webcam view, attendance logging display, a view attendance table, and CSV export.
+7. **CSV Exporter (`export.py`)**: Exports attendance records to a CSV file.
+8. **Main Entry Point (`main.py`)**: Initializes the system directories and launches the application.
+
+```mermaid
+graph TD
+    A[Tkinter GUI] --> B[Student Registration]
+    A --> C[Train / Generate Encodings]
+    A --> D[Start Attendance Mode]
+    A --> E[View Attendance Table]
+    A --> F[Export Attendance to CSV]
+    
+    B -->|Capture 5-10 images| G[dataset/ student_id_name/]
+    C -->|Extract 128-D Embeddings| H[encodings/encodings.pkl]
+    D -->|Process Live Webcam Feed| I[Face Detection & Encoding]
+    I -->|Compare Face Distance| J{Distance <= Tolerance?}
+    J -->|Yes| K[Identify Student]
+    J -->|No| L[Label Unknown]
+    K -->|Mark Attendance| M[SQLite Database]
+    M -->|Today's Log Check| N{Already Marked Today?}
+    N -->|No| O[Record Attendance in DB]
+    N -->|Yes| P[Show 'Already Marked' Alert]
+```
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Biometric Privacy:** The system keeps all face images and encodings locally. No data is sent to external servers. This project is for educational/micro-project use.
+> 
+> **Webcam Requirement:** The system requires an active, connected laptop/PC webcam (Device index 0 by default).
+> 
+> **Tolerance (Threshold):** The default face matching threshold is set to `TOLERANCE = 0.5`. A lower threshold is more strict (fewer false positives, but might miss matching if the angle/lighting changes). A higher threshold is more lenient (more false positives).
+
+---
+
+## Proposed Changes
+
+We will create a new modular Python project under `c:/Users/Lucky/OneDrive/Desktop/CV PROJECT`.
+
+### Component 1: Configuration & Initialization
+
+#### [NEW] [main.py](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/src/main.py)
+Initializes directory structures, checks database connection, and launches the Tkinter GUI.
+
+### Component 2: Database Layer
+
+#### [NEW] [database.py](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/src/database.py)
+Creates and manages connection to `database/attendance.db`.
+- **`students` Table**:
+  - `student_id` TEXT PRIMARY KEY
+  - `student_name` TEXT
+  - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- **`attendance` Table**:
+  - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+  - `student_id` TEXT
+  - `student_name` TEXT
+  - `date` TEXT
+  - `time` TEXT
+  - `status` TEXT
+  - `FOREIGN KEY(student_id) REFERENCES students(student_id)`
+  - *Unique Index on `(student_id, date)` to prevent duplicate entries.*
+
+### Component 3: Registration Module
+
+#### [NEW] [register_student.py](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/src/register_student.py)
+Handles image acquisition, RGB/BGR conversion, face detection, and file storage.
+- Ensures exactly 1 face is present in the frame.
+- Saves 5-10 clear images inside `dataset/{student_id}_{student_name}/`.
+
+### Component 4: Encoding Module
+
+#### [NEW] [generate_encodings.py](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/src/generate_encodings.py)
+Loads images, generates 128-dimensional encodings using `face_recognition.face_encodings()`, and saves them to `encodings/encodings.pkl`.
+- Incremental update check: If student directory is already in the saved encodings, skip processing to save time.
+
+### Component 5: Face Recognition Module
+
+#### [NEW] [face_recognition_module.py](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/src/face_recognition_module.py)
+The core Computer Vision logic.
+- Resizes webcam frames to 1/4 size for fast processing.
+- Converts BGR to RGB.
+- Compares live encoding against known encodings using `face_recognition.face_distance()`.
+- Calculates match percentage: `(1 - distance) * 100`.
+
+### Component 6: Attendance Module
+
+#### [NEW] [attendance.py](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/src/attendance.py)
+Validates and logs attendance. Uses an in-memory set of today's marked students for fast checks.
+
+### Component 7: CSV Export Module
+
+#### [NEW] [export.py](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/src/export.py)
+Exports SQLite attendance records to CSV using Pandas.
+
+### Component 8: Tkinter GUI
+
+#### [NEW] [gui.py](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/src/gui.py)
+A professional, modern Tkinter GUI using a dark slate & glassmorphic palette. Features:
+- Embedded OpenCV video frame for student registration and live attendance marking.
+- Attendance history search table (Treeview).
+- Informative log messages.
+
+### Component 9: Project Documentation & Requirements
+
+#### [NEW] [requirements.txt](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/requirements.txt)
+Specifies dependencies: `opencv-python`, `face_recognition`, `numpy`, `pandas`, `openpyxl` (optional).
+
+#### [NEW] [README.md](file:///c:/Users/Lucky/OneDrive/Desktop/CV%20PROJECT/README.md)
+Comprehensive student guide, system architecture description, setup instructions, and 20 detailed viva questions and answers.
+
+---
+
+## Verification Plan
+
+### Automated Tests / Scripts
+We will create a verification script to test:
+1. Database initialization and insertion constraints.
+2. File encodings generation.
+3. Face matching using dummy/saved face images.
+
+### Manual Verification Checklist
+1. **Launch GUI**: Run `python src/main.py`. Confirm GUI window opens with correct title and design.
+2. **Student Registration**: Enter ID `23` and Name `Lakshmi`. Open webcam, capture 5 photos. Confirm folder `dataset/23_Lakshmi/` is created with 5 images.
+3. **Generate Encodings**: Click "Train / Generate Face Encodings". Confirm `encodings/encodings.pkl` is created.
+4. **Attendance Capture**: Open attendance camera. Point at registered person. Bounding box, name, ID, and match percentage should appear. Confirm record is added to database and displayed in UI log.
+5. **Double Attendance Prevention**: Remain in front of camera. Verify it says "Attendance already marked" and does not write duplicates.
+6. **Unknown Person**: Point at an unregistered face. Box should show "Unknown".
+7. **View Table**: Go to View Attendance tab. Search for ID `23`.
+8. **Export CSV**: Export records to CSV, and open it in Excel/Notepad to verify.
