@@ -2,1120 +2,438 @@ import os
 import sqlite3
 from datetime import datetime
 
+from werkzeug.security import generate_password_hash
+
 
 # ============================================================
-# PROJECT PATHS
+# DATABASE PATH
 # ============================================================
 
-PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..")
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
 )
 
-DB_DIR = os.path.join(
-    PROJECT_ROOT,
-    "database"
-)
-
-DB_PATH = os.path.join(
-    DB_DIR,
+DATABASE_PATH = os.path.join(
+    BASE_DIR,
     "attendance.db"
 )
 
 
 # ============================================================
-# LEGACY SUBJECTS
-# Kept for compatibility with the existing attendance system.
+# SUBJECTS
 # ============================================================
 
-SUBJECTS = {
-    "INF45011": "Computer Vision (CV)",
-    "INF45021": "AI & Machine Learning",
-    "INF45022": "Deep Learning (DL)",
-    "INF45112": "Data Science & NLP",
-    "CVLAB": "Computer Vision Lab (CVLAB)"
-}
+SUBJECTS = []
 
 
 # ============================================================
-# DATABASE CONNECTION
+# CONNECTION
 # ============================================================
 
 def get_db_connection():
 
-    os.makedirs(DB_DIR, exist_ok=True)
-
-    conn = sqlite3.connect(DB_PATH)
-
-    conn.execute("PRAGMA foreign_keys = ON;")
+    conn = sqlite3.connect(
+        DATABASE_PATH
+    )
 
     conn.row_factory = sqlite3.Row
+
+    conn.execute(
+        "PRAGMA foreign_keys = ON"
+    )
 
     return conn
 
 
 # ============================================================
-# HELPER
+# DATABASE MIGRATION HELPERS
 # ============================================================
 
-def table_exists(conn, table_name):
+def table_has_column(
+    cursor,
+    table_name,
+    column_name
+):
 
-    row = conn.execute(
-        """
-        SELECT name
-        FROM sqlite_master
-        WHERE type = 'table'
-        AND name = ?
-        """,
-        (table_name,)
-    ).fetchone()
-
-    return row is not None
-
-
-def column_exists(conn, table_name, column_name):
-
-    rows = conn.execute(
+    cursor.execute(
         f"PRAGMA table_info({table_name})"
-    ).fetchall()
+    )
+
+    columns = cursor.fetchall()
 
     return any(
-        row["name"] == column_name
-        for row in rows
+        column["name"] == column_name
+        for column in columns
     )
 
 
-def add_column_if_missing(
-    conn,
-    table_name,
-    column_name,
-    column_definition
-):
-
-    if not column_exists(
-        conn,
-        table_name,
-        column_name
-    ):
-
-        conn.execute(
-            f"""
-            ALTER TABLE {table_name}
-            ADD COLUMN {column_name}
-            {column_definition}
-            """
-        )
-
-
 # ============================================================
-# INITIAL DATABASE SETUP
+# INITIALIZE DATABASE
 # ============================================================
 
 def init_db():
 
     conn = get_db_connection()
 
-    try:
-
-        # ----------------------------------------------------
-        # 1. Create legacy tables
-        # ----------------------------------------------------
-        create_legacy_tables(conn)
-
-        # ----------------------------------------------------
-        # 2. Create core system tables
-        # ----------------------------------------------------
-        create_core_system_tables(conn)
-
-        # ----------------------------------------------------
-        # 3. Create academic structure tables
-        # ----------------------------------------------------
-        create_academic_tables(conn)
-
-        # ----------------------------------------------------
-        # 4. Create relationship tables
-        # ----------------------------------------------------
-        create_relationship_tables(conn)
-
-        # ----------------------------------------------------
-        # 5. Migrate existing databases
-        #
-        # IMPORTANT:
-        # Existing databases may have been created using
-        # an older schema. Migration MUST happen before
-        # indexes are created.
-        # ----------------------------------------------------
-        migrate_existing_tables(conn)
-
-        # ----------------------------------------------------
-        # 6. Create indexes
-        # ----------------------------------------------------
-        create_indexes(conn)
-
-        # ----------------------------------------------------
-        # 7. Commit everything
-        # ----------------------------------------------------
-        conn.commit()
-
-        print(
-            "Database initialized successfully at:",
-            DB_PATH
-        )
-
-    except Exception as e:
-
-        # ----------------------------------------------------
-        # Roll back if anything fails
-        # ----------------------------------------------------
-        conn.rollback()
-
-        print(
-            "Database initialization failed:",
-            str(e)
-        )
-
-        raise
-
-    finally:
-
-        # ----------------------------------------------------
-        # Always close database connection
-        # ----------------------------------------------------
-        conn.close()
-
-# ============================================================
-# LEGACY TABLES
-# Keep these because your existing application uses them.
-# ============================================================
-
-def create_legacy_tables(conn):
-
-    # --------------------------------------------------------
-    # STUDENTS
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS students (
-
-            student_id TEXT PRIMARY KEY,
-
-            student_name TEXT NOT NULL,
-
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # OLD DAILY ATTENDANCE
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS attendance (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            student_id TEXT NOT NULL,
-
-            student_name TEXT NOT NULL,
-
-            date TEXT NOT NULL,
-
-            time TEXT NOT NULL,
-
-            status TEXT NOT NULL,
-
-            FOREIGN KEY (
-                student_id
-            )
-            REFERENCES students(student_id)
-
-            ON DELETE CASCADE
-        );
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # OLD SUBJECT ATTENDANCE
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS subject_attendance (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            student_id TEXT NOT NULL,
-
-            subject_code TEXT NOT NULL,
-
-            date TEXT NOT NULL,
-
-            status TEXT NOT NULL,
-
-            FOREIGN KEY (
-                student_id
-            )
-            REFERENCES students(student_id)
-
-            ON DELETE CASCADE
-        );
-        """
-    )
-
-
-# ============================================================
-# CORE SYSTEM TABLES
-# ============================================================
-
-def create_core_system_tables(conn):
+    cursor = conn.cursor()
 
     # --------------------------------------------------------
     # USERS
     # --------------------------------------------------------
 
-    conn.execute(
-        """
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER
+                PRIMARY KEY AUTOINCREMENT,
 
-            username TEXT NOT NULL UNIQUE,
+            username TEXT
+                NOT NULL UNIQUE,
 
-            password_hash TEXT NOT NULL,
+            password_hash TEXT
+                NOT NULL,
 
-            role TEXT NOT NULL
-                CHECK (
-                    role IN (
-                        'ADMIN',
-                        'FACULTY',
-                        'STUDENT'
-                    )
-                ),
+            role TEXT
+                NOT NULL,
 
-            is_active INTEGER NOT NULL DEFAULT 1,
+            is_active INTEGER
+                NOT NULL DEFAULT 1,
 
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
+            created_at TEXT
+                DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-
-    # --------------------------------------------------------
-    # FACULTY
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS faculty (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            user_id INTEGER UNIQUE,
-
-            faculty_id TEXT NOT NULL UNIQUE,
-
-            name TEXT NOT NULL,
-
-            email TEXT UNIQUE,
-
-            phone TEXT,
-
-            designation TEXT,
-
-            department_id INTEGER,
-
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            FOREIGN KEY (
-                user_id
-            )
-            REFERENCES users(id)
-
-            ON DELETE SET NULL,
-
-            FOREIGN KEY (
-                department_id
-            )
-            REFERENCES departments(id)
-
-            ON DELETE SET NULL
-        );
-        """
-    )
-
-
-# ============================================================
-# ACADEMIC STRUCTURE
-# ============================================================
-
-def create_academic_tables(conn):
 
     # --------------------------------------------------------
     # DEPARTMENTS
     # --------------------------------------------------------
 
-    conn.execute(
-        """
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS departments (
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            department_id INTEGER
+                PRIMARY KEY AUTOINCREMENT,
 
-            department_code TEXT NOT NULL UNIQUE,
+            department_code TEXT
+                NOT NULL UNIQUE,
 
-            department_name TEXT NOT NULL UNIQUE,
+            department_name TEXT
+                NOT NULL UNIQUE,
 
             description TEXT,
 
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
+            status TEXT
+                NOT NULL
+                DEFAULT 'ACTIVE'
+        )
+    """)
 
 
     # --------------------------------------------------------
     # COURSES
     # --------------------------------------------------------
 
-    conn.execute(
-        """
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS courses (
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER
+                PRIMARY KEY AUTOINCREMENT,
 
-            department_id INTEGER NOT NULL,
+            department_id INTEGER
+                NOT NULL,
 
-            course_code TEXT NOT NULL UNIQUE,
+            course_code TEXT
+                NOT NULL UNIQUE,
 
-            course_name TEXT NOT NULL,
+            course_name TEXT
+                NOT NULL,
 
-            degree_type TEXT,
+            degree_type TEXT
+                NOT NULL,
 
-            duration_years INTEGER,
+            duration_years INTEGER
+                NOT NULL,
 
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
+            year INTEGER
+                NOT NULL DEFAULT 1,
 
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            semester INTEGER
+                NOT NULL DEFAULT 1,
 
-            FOREIGN KEY (
-                department_id
-            )
-            REFERENCES departments(id)
+            created_at TEXT
+                DEFAULT CURRENT_TIMESTAMP,
 
-            ON DELETE RESTRICT
-        );
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # SEMESTERS
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS semesters (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            course_id INTEGER NOT NULL,
-
-            semester_number INTEGER NOT NULL,
-
-            semester_name TEXT,
-
-            academic_year TEXT,
-
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            UNIQUE (
-                course_id,
-                semester_number
-            ),
-
-            FOREIGN KEY (
-                course_id
-            )
-            REFERENCES courses(id)
-
-            ON DELETE CASCADE
-        );
-        """
-    )
+            FOREIGN KEY (department_id)
+                REFERENCES departments(department_id)
+                ON DELETE RESTRICT
+        )
+    """)
 
 
     # --------------------------------------------------------
-    # SUBJECTS
+    # MIGRATE OLD COURSES TABLE
     # --------------------------------------------------------
 
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS subjects (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            semester_id INTEGER NOT NULL,
-
-            subject_code TEXT NOT NULL UNIQUE,
-
-            subject_name TEXT NOT NULL,
-
-            subject_type TEXT DEFAULT 'THEORY',
-
-            credits REAL DEFAULT 0,
-
-            weekly_lectures INTEGER DEFAULT 0,
-
-            status TEXT NOT NULL DEFAULT 'ACTIVE',
-
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            FOREIGN KEY (
-                semester_id
-            )
-            REFERENCES semesters(id)
-
-            ON DELETE CASCADE
-        );
-        """
-    )
-
-
-# ============================================================
-# RELATIONSHIP TABLES
-# ============================================================
-
-def create_relationship_tables(conn):
-
-    # --------------------------------------------------------
-    # FACULTY ↔ SUBJECT
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS faculty_subjects (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            faculty_id INTEGER NOT NULL,
-
-            subject_id INTEGER NOT NULL,
-
-            academic_year TEXT,
-
-            assigned_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            UNIQUE (
-                faculty_id,
-                subject_id,
-                academic_year
-            ),
-
-            FOREIGN KEY (
-                faculty_id
-            )
-            REFERENCES faculty(id)
-
-            ON DELETE CASCADE,
-
-            FOREIGN KEY (
-                subject_id
-            )
-            REFERENCES subjects(id)
-
-            ON DELETE CASCADE
-        );
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # STUDENT COURSE ENROLLMENT
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS student_courses (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            student_id TEXT NOT NULL,
-
-            course_id INTEGER NOT NULL,
-
-            semester_id INTEGER,
-
-            division TEXT,
-
-            roll_number TEXT,
-
-            academic_year TEXT,
-
-            enrollment_status TEXT
-                DEFAULT 'ACTIVE',
-
-            enrolled_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            UNIQUE (
-                student_id,
-                course_id,
-                academic_year
-            ),
-
-            FOREIGN KEY (
-                student_id
-            )
-            REFERENCES students(student_id)
-
-            ON DELETE CASCADE,
-
-            FOREIGN KEY (
-                course_id
-            )
-            REFERENCES courses(id)
-
-            ON DELETE RESTRICT,
-
-            FOREIGN KEY (
-                semester_id
-            )
-            REFERENCES semesters(id)
-
-            ON DELETE SET NULL
-        );
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # FACE EMBEDDINGS
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS face_embeddings (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            student_id TEXT NOT NULL,
-
-            embedding BLOB NOT NULL,
-
-            model_version TEXT NOT NULL
-                DEFAULT 'face_recognition_128d',
-
-            is_active INTEGER NOT NULL DEFAULT 1,
-
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            FOREIGN KEY (
-                student_id
-            )
-            REFERENCES students(student_id)
-
-            ON DELETE CASCADE
-        );
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # LECTURE SESSIONS
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS sessions (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            subject_id INTEGER,
-
-            subject_code TEXT,
-
-            faculty_id INTEGER NOT NULL,
-
-            division TEXT,
-
-            session_date TEXT NOT NULL,
-
-            start_time TEXT NOT NULL,
-
-            end_time TEXT NOT NULL,
-
-            attendance_start_time TEXT,
-
-            attendance_end_time TEXT,
-
-            status TEXT NOT NULL DEFAULT 'SCHEDULED',
-
-            created_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            FOREIGN KEY (
-                subject_id
-            )
-            REFERENCES subjects(id)
-
-            ON DELETE SET NULL,
-
-            FOREIGN KEY (
-                faculty_id
-            )
-            REFERENCES faculty(id)
-
-            ON DELETE RESTRICT
-        );
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # SESSION ATTENDANCE
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS session_attendance (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            session_id INTEGER NOT NULL,
-
-            student_id TEXT NOT NULL,
-
-            status TEXT NOT NULL DEFAULT 'PRESENT',
-
-            marked_at
-                TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            face_distance REAL,
-
-            method TEXT NOT NULL DEFAULT 'FACE',
-
-            UNIQUE (
-                session_id,
-                student_id
-            ),
-
-            FOREIGN KEY (
-                session_id
-            )
-            REFERENCES sessions(id)
-
-            ON DELETE CASCADE,
-
-            FOREIGN KEY (
-                student_id
-            )
-            REFERENCES students(student_id)
-
-            ON DELETE CASCADE
-        );
-        """
-    )
-
-
-# ============================================================
-# MIGRATE EXISTING TABLES
-# ============================================================
-
-def migrate_existing_tables(conn):
-
-    # --------------------------------------------------------
-    # STUDENT ADDITIONAL INFORMATION
-    # --------------------------------------------------------
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "email",
-        "TEXT"
-    )
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "phone",
-        "TEXT"
-    )
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "roll_number",
-        "TEXT"
-    )
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "department_id",
-        "INTEGER"
-    )
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "course_id",
-        "INTEGER"
-    )
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "semester_id",
-        "INTEGER"
-    )
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "division",
-        "TEXT"
-    )
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "user_id",
-        "INTEGER"
-    )
-
-    add_column_if_missing(
-        conn,
-        "students",
-        "status",
-        "TEXT DEFAULT 'ACTIVE'"
-    )
-
-
-    # --------------------------------------------------------
-    # FACULTY ADDITIONAL INFORMATION
-    # --------------------------------------------------------
-
-    add_column_if_missing(
-        conn,
-        "faculty",
-        "department_id",
-        "INTEGER"
-    )
-
-
-    # --------------------------------------------------------
-    # SESSION SUBJECT RELATION
-    # --------------------------------------------------------
-
-    add_column_if_missing(
-        conn,
-        "sessions",
-        "subject_id",
-        "INTEGER"
-    )
-
-    add_column_if_missing(
-        conn,
-        "sessions",
-        "division",
-        "TEXT"
-    )
-
-
-# ============================================================
-# INDEXES
-# ============================================================
-
-def create_indexes(conn):
-
-    # --------------------------------------------------------
-    # LEGACY ATTENDANCE
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE UNIQUE INDEX IF NOT EXISTS
-        idx_attendance_student_date
-        ON attendance (
-            student_id,
-            date
-        );
-        """
-    )
-
-
-    conn.execute(
-        """
-        CREATE UNIQUE INDEX IF NOT EXISTS
-        idx_subject_attendance_unique
-        ON subject_attendance (
-            student_id,
-            subject_code,
-            date
-        );
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # ACADEMIC
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_courses_department
-        ON courses(department_id);
-        """
-    )
-
-
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_semesters_course
-        ON semesters(course_id);
-        """
-    )
-
-
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_subjects_semester
-        ON subjects(semester_id);
-        """
-    )
-
-
-    # --------------------------------------------------------
-    # FACULTY
-    # --------------------------------------------------------
-
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_faculty_department
-        ON faculty(department_id);
-        """
-    )
-
-
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_faculty_subjects_faculty
-        ON faculty_subjects(faculty_id);
-        """
-    )
-
-
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_faculty_subjects_subject
-        ON faculty_subjects(subject_id);
-        """
-    )
+    if not table_has_column(
+        cursor,
+        "courses",
+        "year"
+    ):
+
+        cursor.execute("""
+            ALTER TABLE courses
+            ADD COLUMN year INTEGER
+            NOT NULL DEFAULT 1
+        """)
+
+
+    if not table_has_column(
+        cursor,
+        "courses",
+        "semester"
+    ):
+
+        cursor.execute("""
+            ALTER TABLE courses
+            ADD COLUMN semester INTEGER
+            NOT NULL DEFAULT 1
+        """)
 
 
     # --------------------------------------------------------
     # STUDENTS
     # --------------------------------------------------------
 
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_student_courses_student
-        ON student_courses(student_id);
-        """
-    )
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS students (
 
+            student_id TEXT
+                PRIMARY KEY,
 
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_student_courses_course
-        ON student_courses(course_id);
-        """
-    )
+            student_name TEXT
+                NOT NULL
+        )
+    """)
 
 
     # --------------------------------------------------------
-    # BIOMETRICS
+    # ATTENDANCE
     # --------------------------------------------------------
 
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_face_embeddings_student
-        ON face_embeddings(student_id);
-        """
-    )
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS attendance (
+
+            id INTEGER
+                PRIMARY KEY AUTOINCREMENT,
+
+            student_id TEXT
+                NOT NULL,
+
+            student_name TEXT,
+
+            date TEXT,
+
+            time TEXT
+        )
+    """)
 
 
     # --------------------------------------------------------
-    # SESSIONS
+    # SUBJECT ATTENDANCE
     # --------------------------------------------------------
 
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_sessions_date
-        ON sessions(session_date);
-        """
-    )
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS subject_attendance (
+
+            id INTEGER
+                PRIMARY KEY AUTOINCREMENT,
+
+            student_id TEXT
+                NOT NULL,
+
+            subject_code TEXT
+                NOT NULL,
+
+            date TEXT
+                NOT NULL,
+
+            status TEXT
+                NOT NULL,
+
+            UNIQUE(
+                student_id,
+                subject_code,
+                date
+            )
+        )
+    """)
 
 
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_sessions_faculty
-        ON sessions(faculty_id);
-        """
-    )
+    conn.commit()
 
+    conn.close()
 
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_sessions_subject
-        ON sessions(subject_id);
-        """
-    )
-
-
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_session_attendance_session
-        ON session_attendance(session_id);
-        """
-    )
-
-
-    conn.execute(
-        """
-        CREATE INDEX IF NOT EXISTS
-        idx_session_attendance_student
-        ON session_attendance(student_id);
-        """
-    )
+    create_default_admin()
 
 
 # ============================================================
-# USER MANAGEMENT
+# USER / AUTHENTICATION FUNCTIONS
 # ============================================================
-
-def create_user(
-    username,
-    password_hash,
-    role
-):
-
-    username = str(username).strip()
-
-    role = str(role).strip().upper()
-
-    if role not in (
-        "ADMIN",
-        "FACULTY",
-        "STUDENT"
-    ):
-
-        raise ValueError(
-            "Invalid user role."
-        )
-
-    conn = get_db_connection()
-
-    try:
-
-        cursor = conn.execute(
-            """
-            INSERT INTO users (
-                username,
-                password_hash,
-                role
-            )
-            VALUES (?, ?, ?)
-            """,
-            (
-                username,
-                password_hash,
-                role
-            )
-        )
-
-        conn.commit()
-
-        return cursor.lastrowid
-
-    finally:
-
-        conn.close()
-
 
 def get_user_by_username(username):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        row = conn.execute(
-            """
-            SELECT *
-            FROM users
-            WHERE username = ?
-            """,
-            (str(username).strip(),)
-        ).fetchone()
+    cursor.execute(
+        """
+        SELECT
+            id,
+            username,
+            password_hash,
+            role,
+            is_active,
+            created_at
 
-        return dict(row) if row else None
+        FROM users
 
-    finally:
+        WHERE username = ?
+        """,
+        (
+            username,
+        )
+    )
 
-        conn.close()
+    row = cursor.fetchone()
+
+    conn.close()
+
+    if row:
+
+        user = dict(row)
+
+        user["is_active"] = bool(
+            user["is_active"]
+        )
+
+        return user
+
+    return None
 
 
 def get_user_by_id(user_id):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        row = conn.execute(
-            """
-            SELECT *
-            FROM users
-            WHERE id = ?
-            """,
-            (user_id,)
-        ).fetchone()
+    cursor.execute(
+        """
+        SELECT
+            id,
+            username,
+            password_hash,
+            role,
+            is_active,
+            created_at
 
-        return dict(row) if row else None
+        FROM users
 
-    finally:
+        WHERE id = ?
+        """,
+        (
+            user_id,
+        )
+    )
 
-        conn.close()
+    row = cursor.fetchone()
+
+    conn.close()
+
+    if row:
+
+        user = dict(row)
+
+        user["is_active"] = bool(
+            user["is_active"]
+        )
+
+        return user
+
+    return None
+
+
+def create_user(
+    username,
+    password,
+    role,
+    is_active=True
+):
+
+    username = str(
+        username
+    ).strip()
+
+    password_hash = generate_password_hash(
+        password
+    )
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO users (
+
+            username,
+            password_hash,
+            role,
+            is_active
+
+        )
+
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            username,
+            password_hash,
+            str(role).upper(),
+            1 if is_active else 0
+        )
+    )
+
+    user_id = cursor.lastrowid
+
+    conn.commit()
+
+    conn.close()
+
+    return user_id
+
+
+def create_default_admin():
+
+    existing_admin = get_user_by_username(
+        "admin"
+    )
+
+    if existing_admin:
+
+        return
+
+    create_user(
+        username="admin",
+        password="admin123",
+        role="ADMIN",
+        is_active=True
+    )
+
+    print(
+        "Default admin created: admin / admin123"
+    )
 
 
 # ============================================================
@@ -1130,117 +448,138 @@ def create_department(
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        cursor = conn.execute(
-            """
-            INSERT INTO departments (
-                department_code,
-                department_name,
-                description
-            )
-            VALUES (?, ?, ?)
-            """,
-            (
-                department_code.strip().upper(),
-                department_name.strip(),
-                description.strip()
-            )
+    cursor.execute(
+        """
+        INSERT INTO departments (
+
+            department_code,
+            department_name,
+            description
+
         )
 
-        conn.commit()
+        VALUES (?, ?, ?)
+        """,
+        (
+            department_code,
+            department_name,
+            description
+        )
+    )
 
-        return cursor.lastrowid
+    department_id = cursor.lastrowid
 
-    finally:
+    conn.commit()
 
-        conn.close()
+    conn.close()
+
+    return department_id
 
 
 def get_all_departments():
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM departments
-            ORDER BY department_name
-            """
-        ).fetchall()
+    cursor.execute("""
+        SELECT
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+            department_id,
+            department_code,
+            department_name,
+            description,
+            status
 
-    finally:
+        FROM departments
 
-        conn.close()
+        ORDER BY department_name
+    """)
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return [
+        dict(row)
+        for row in rows
+    ]
 
 
-def get_department(department_id):
+def get_department(
+    department_id
+):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        row = conn.execute(
-            """
-            SELECT *
-            FROM departments
-            WHERE id = ?
-            """,
-            (department_id,)
-        ).fetchone()
+    cursor.execute(
+        """
+        SELECT *
 
-        return dict(row) if row else None
+        FROM departments
 
-    finally:
+        WHERE department_id = ?
+        """,
+        (
+            department_id,
+        )
+    )
 
-        conn.close()
+    row = cursor.fetchone()
+
+    conn.close()
+
+    if row:
+
+        return dict(row)
+
+    return None
 
 
 def update_department(
     department_id,
     department_code,
     department_name,
-    description="",
-    status="ACTIVE"
+    description,
+    status
 ):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        conn.execute(
-            """
-            UPDATE departments
+    cursor.execute(
+        """
+        UPDATE departments
 
-            SET
-                department_code = ?,
-                department_name = ?,
-                description = ?,
-                status = ?
+        SET
 
-            WHERE id = ?
-            """,
-            (
-                department_code.strip().upper(),
-                department_name.strip(),
-                description.strip(),
-                status,
-                department_id
-            )
+            department_code = ?,
+
+            department_name = ?,
+
+            description = ?,
+
+            status = ?
+
+        WHERE department_id = ?
+        """,
+        (
+            department_code,
+            department_name,
+            description,
+            status,
+            department_id
         )
+    )
 
-        conn.commit()
+    conn.commit()
 
-    finally:
-
-        conn.close()
+    conn.close()
 
 
 def delete_department(
@@ -1249,21 +588,22 @@ def delete_department(
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        conn.execute(
-            """
-            DELETE FROM departments
-            WHERE id = ?
-            """,
-            (department_id,)
+    cursor.execute(
+        """
+        DELETE FROM departments
+
+        WHERE department_id = ?
+        """,
+        (
+            department_id,
         )
+    )
 
-        conn.commit()
+    conn.commit()
 
-    finally:
-
-        conn.close()
+    conn.close()
 
 
 # ============================================================
@@ -1274,75 +614,109 @@ def create_course(
     department_id,
     course_code,
     course_name,
-    degree_type="B.Tech",
-    duration_years=4
+    degree_type,
+    duration_years,
+    year,
+    semester
 ):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        cursor = conn.execute(
-            """
-            INSERT INTO courses (
-                department_id,
-                course_code,
-                course_name,
-                degree_type,
-                duration_years
-            )
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (
-                department_id,
-                course_code.strip().upper(),
-                course_name.strip(),
-                degree_type.strip(),
-                duration_years
-            )
+    cursor.execute(
+        """
+        INSERT INTO courses (
+
+            department_id,
+            course_code,
+            course_name,
+            degree_type,
+            duration_years,
+            year,
+            semester
+
         )
 
-        conn.commit()
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            department_id,
+            course_code,
+            course_name,
+            degree_type,
+            duration_years,
+            year,
+            semester
+        )
+    )
 
-        return cursor.lastrowid
+    course_id = cursor.lastrowid
 
-    finally:
+    conn.commit()
 
-        conn.close()
+    conn.close()
+
+    return course_id
 
 
 def get_all_courses():
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        rows = conn.execute(
-            """
-            SELECT
-                c.*,
-                d.department_name,
-                d.department_code
+    cursor.execute("""
+        SELECT
 
-            FROM courses c
+            c.course_id,
 
-            JOIN departments d
-                ON d.id = c.department_id
+            c.department_id,
 
-            ORDER BY
-                d.department_name,
-                c.course_name
-            """
-        ).fetchall()
+            d.department_code,
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+            d.department_name,
 
-    finally:
+            c.course_code,
 
-        conn.close()
+            c.course_name,
+
+            c.degree_type,
+
+            c.duration_years,
+
+            c.year,
+
+            c.semester,
+
+            c.created_at
+
+        FROM courses c
+
+        INNER JOIN departments d
+
+        ON c.department_id =
+           d.department_id
+
+        ORDER BY
+
+            d.department_name,
+
+            c.year,
+
+            c.semester,
+
+            c.course_name
+    """)
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return [
+        dict(row)
+        for row in rows
+    ]
 
 
 def get_courses_by_department(
@@ -1351,228 +725,174 @@ def get_courses_by_department(
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM courses
+    cursor.execute(
+        """
+        SELECT
 
-            WHERE department_id = ?
+            c.course_id,
 
-            ORDER BY course_name
-            """,
-            (department_id,)
-        ).fetchall()
+            c.department_id,
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+            d.department_code,
 
-    finally:
+            d.department_name,
 
-        conn.close()
+            c.course_code,
 
+            c.course_name,
 
-# ============================================================
-# SEMESTER FUNCTIONS
-# ============================================================
+            c.degree_type,
 
-def create_semester(
-    course_id,
-    semester_number,
-    semester_name=None,
-    academic_year=None
-):
+            c.duration_years,
 
-    if not semester_name:
+            c.year,
 
-        semester_name = (
-            f"Semester {semester_number}"
+            c.semester,
+
+            c.created_at
+
+        FROM courses c
+
+        INNER JOIN departments d
+
+        ON c.department_id =
+           d.department_id
+
+        WHERE c.department_id = ?
+
+        ORDER BY
+
+            c.year,
+
+            c.semester,
+
+            c.course_name
+        """,
+        (
+            department_id,
         )
+    )
 
-    conn = get_db_connection()
+    rows = cursor.fetchall()
 
-    try:
+    conn.close()
 
-        cursor = conn.execute(
-            """
-            INSERT INTO semesters (
-                course_id,
-                semester_number,
-                semester_name,
-                academic_year
-            )
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                course_id,
-                semester_number,
-                semester_name,
-                academic_year
-            )
-        )
-
-        conn.commit()
-
-        return cursor.lastrowid
-
-    finally:
-
-        conn.close()
+    return [
+        dict(row)
+        for row in rows
+    ]
 
 
-def get_semesters_by_course(
+def get_course(
     course_id
 ):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM semesters
+    cursor.execute(
+        """
+        SELECT *
 
-            WHERE course_id = ?
+        FROM courses
 
-            ORDER BY semester_number
-            """,
-            (course_id,)
-        ).fetchall()
-
-        return [
-            dict(row)
-            for row in rows
-        ]
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# SUBJECT FUNCTIONS
-# ============================================================
-
-def create_subject(
-    semester_id,
-    subject_code,
-    subject_name,
-    subject_type="THEORY",
-    credits=0,
-    weekly_lectures=0
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        cursor = conn.execute(
-            """
-            INSERT INTO subjects (
-                semester_id,
-                subject_code,
-                subject_name,
-                subject_type,
-                credits,
-                weekly_lectures
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                semester_id,
-                subject_code.strip().upper(),
-                subject_name.strip(),
-                subject_type.strip().upper(),
-                credits,
-                weekly_lectures
-            )
+        WHERE course_id = ?
+        """,
+        (
+            course_id,
         )
+    )
 
-        conn.commit()
+    row = cursor.fetchone()
 
-        return cursor.lastrowid
+    conn.close()
 
-    finally:
+    if row:
 
-        conn.close()
+        return dict(row)
 
-
-def get_all_subjects():
-
-    conn = get_db_connection()
-
-    try:
-
-        rows = conn.execute(
-            """
-            SELECT
-                s.*,
-                sem.semester_number,
-                c.course_name,
-                c.course_code,
-                d.department_name
-
-            FROM subjects s
-
-            JOIN semesters sem
-                ON sem.id = s.semester_id
-
-            JOIN courses c
-                ON c.id = sem.course_id
-
-            JOIN departments d
-                ON d.id = c.department_id
-
-            ORDER BY
-                d.department_name,
-                c.course_name,
-                sem.semester_number,
-                s.subject_name
-            """
-        ).fetchall()
-
-        return [
-            dict(row)
-            for row in rows
-        ]
-
-    finally:
-
-        conn.close()
+    return None
 
 
-def get_subjects_by_semester(
-    semester_id
+def update_course(
+    course_id,
+    department_id,
+    course_code,
+    course_name,
+    degree_type,
+    duration_years,
+    year,
+    semester
 ):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM subjects
+    cursor.execute(
+        """
+        UPDATE courses
 
-            WHERE semester_id = ?
+        SET
 
-            ORDER BY subject_name
-            """,
-            (semester_id,)
-        ).fetchall()
+            department_id = ?,
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+            course_code = ?,
 
-    finally:
+            course_name = ?,
 
-        conn.close()
+            degree_type = ?,
+
+            duration_years = ?,
+
+            year = ?,
+
+            semester = ?
+
+        WHERE course_id = ?
+        """,
+        (
+            department_id,
+            course_code,
+            course_name,
+            degree_type,
+            duration_years,
+            year,
+            semester,
+            course_id
+        )
+    )
+
+    conn.commit()
+
+    conn.close()
+
+
+def delete_course(
+    course_id
+):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM courses
+
+        WHERE course_id = ?
+        """,
+        (
+            course_id,
+        )
+    )
+
+    conn.commit()
+
+    conn.close()
 
 
 # ============================================================
@@ -1581,146 +901,92 @@ def get_subjects_by_semester(
 
 def add_student(
     student_id,
-    student_name,
-    email=None,
-    phone=None,
-    roll_number=None,
-    department_id=None,
-    course_id=None,
-    semester_id=None,
-    division=None,
-    user_id=None
+    student_name
 ):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        conn.execute(
-            """
-            INSERT INTO students (
-                student_id,
-                student_name,
-                email,
-                phone,
-                roll_number,
-                department_id,
-                course_id,
-                semester_id,
-                division,
-                user_id,
-                status
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
-            """,
-            (
-                student_id.strip(),
-                student_name.strip(),
-                email,
-                phone,
-                roll_number,
-                department_id,
-                course_id,
-                semester_id,
-                division,
-                user_id
-            )
+    cursor.execute(
+        """
+        INSERT INTO students (
+
+            student_id,
+            student_name
+
         )
 
-        conn.commit()
+        VALUES (?, ?)
+        """,
+        (
+            student_id,
+            student_name
+        )
+    )
 
-        return True
+    conn.commit()
 
-    finally:
-
-        conn.close()
-
-
-def get_student(student_id):
-
-    conn = get_db_connection()
-
-    try:
-
-        row = conn.execute(
-            """
-            SELECT
-                s.*,
-
-                d.department_name,
-
-                c.course_name,
-                c.course_code,
-
-                sem.semester_number
-
-            FROM students s
-
-            LEFT JOIN departments d
-                ON d.id = s.department_id
-
-            LEFT JOIN courses c
-                ON c.id = s.course_id
-
-            LEFT JOIN semesters sem
-                ON sem.id = s.semester_id
-
-            WHERE s.student_id = ?
-            """,
-            (
-                student_id.strip(),
-            )
-        ).fetchone()
-
-        return dict(row) if row else None
-
-    finally:
-
-        conn.close()
+    conn.close()
 
 
 def get_all_students():
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        rows = conn.execute(
-            """
-            SELECT
-                s.*,
+    cursor.execute("""
+        SELECT
 
-                d.department_name,
+            student_id,
+            student_name
 
-                c.course_name,
-                c.course_code,
+        FROM students
 
-                sem.semester_number
+        ORDER BY student_name
+    """)
 
-            FROM students s
+    rows = cursor.fetchall()
 
-            LEFT JOIN departments d
-                ON d.id = s.department_id
+    conn.close()
 
-            LEFT JOIN courses c
-                ON c.id = s.course_id
+    return [
+        dict(row)
+        for row in rows
+    ]
 
-            LEFT JOIN semesters sem
-                ON sem.id = s.semester_id
 
-            ORDER BY
-                s.student_id
-            """
-        ).fetchall()
+def get_student(
+    student_id
+):
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+    conn = get_db_connection()
 
-    finally:
+    cursor = conn.cursor()
 
-        conn.close()
+    cursor.execute(
+        """
+        SELECT *
+
+        FROM students
+
+        WHERE student_id = ?
+        """,
+        (
+            student_id,
+        )
+    )
+
+    row = cursor.fetchone()
+
+    conn.close()
+
+    if row:
+
+        return dict(row)
+
+    return None
 
 
 def delete_student_db(
@@ -1729,665 +995,102 @@ def delete_student_db(
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        conn.execute(
-            """
-            DELETE FROM students
-            WHERE student_id = ?
-            """,
-            (
-                student_id.strip(),
-            )
+    cursor.execute(
+        """
+        DELETE FROM subject_attendance
+
+        WHERE student_id = ?
+        """,
+        (
+            student_id,
         )
+    )
 
-        conn.commit()
+    cursor.execute(
+        """
+        DELETE FROM attendance
 
-        return True
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# STUDENT ENROLLMENT
-# ============================================================
-
-def enroll_student(
-    student_id,
-    course_id,
-    semester_id=None,
-    division=None,
-    roll_number=None,
-    academic_year=None
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        cursor = conn.execute(
-            """
-            INSERT INTO student_courses (
-                student_id,
-                course_id,
-                semester_id,
-                division,
-                roll_number,
-                academic_year
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                student_id,
-                course_id,
-                semester_id,
-                division,
-                roll_number,
-                academic_year
-            )
+        WHERE student_id = ?
+        """,
+        (
+            student_id,
         )
+    )
 
-        conn.commit()
+    cursor.execute(
+        """
+        DELETE FROM students
 
-        return cursor.lastrowid
-
-    finally:
-
-        conn.close()
-
-
-def get_student_enrollments(
-    student_id
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        rows = conn.execute(
-            """
-            SELECT
-
-                sc.*,
-
-                c.course_name,
-                c.course_code,
-
-                d.department_name,
-
-                sem.semester_number
-
-            FROM student_courses sc
-
-            JOIN courses c
-                ON c.id = sc.course_id
-
-            JOIN departments d
-                ON d.id = c.department_id
-
-            LEFT JOIN semesters sem
-                ON sem.id = sc.semester_id
-
-            WHERE sc.student_id = ?
-
-            ORDER BY
-                sc.academic_year DESC
-            """,
-            (
-                student_id,
-            )
-        ).fetchall()
-
-        return [
-            dict(row)
-            for row in rows
-        ]
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# FACE EMBEDDING FUNCTIONS
-# ============================================================
-
-def save_face_embedding(
-    student_id,
-    embedding,
-    model_version="face_recognition_128d"
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        conn.execute(
-            """
-            UPDATE face_embeddings
-
-            SET is_active = 0
-
-            WHERE student_id = ?
-            """,
-            (
-                student_id,
-            )
+        WHERE student_id = ?
+        """,
+        (
+            student_id,
         )
+    )
+
+    conn.commit()
+
+    conn.close()
 
 
-        conn.execute(
-            """
-            INSERT INTO face_embeddings (
-                student_id,
-                embedding,
-                model_version
-            )
-            VALUES (?, ?, ?)
-            """,
-            (
-                student_id,
-                embedding,
-                model_version
-            )
+# ============================================================
+# ATTENDANCE FUNCTIONS
+# ============================================================
+
+def mark_attendance(student_id, student_name=None, date=None, time=None):
+    from datetime import datetime
+
+    date = date or datetime.now().strftime("%Y-%m-%d")
+    time = time or datetime.now().strftime("%H:%M:%S")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Prevent duplicate attendance for the same student on the same date
+    cursor.execute(
+        """
+        SELECT id
+        FROM attendance
+        WHERE student_id = ? AND date = ?
+        LIMIT 1
+        """,
+        (student_id, date),
+    )
+
+    if cursor.fetchone():
+        conn.close()
+        return False
+
+    # Get student name automatically if not supplied
+    if not student_name:
+        cursor.execute(
+            "SELECT student_name FROM students WHERE student_id = ?",
+            (student_id,),
         )
+        student = cursor.fetchone()
 
-        conn.commit()
+        if student:
+            student_name = student["student_name"]
 
-    finally:
-
-        conn.close()
-
-
-def get_active_face_embeddings():
-
-    conn = get_db_connection()
-
-    try:
-
-        rows = conn.execute(
-            """
-            SELECT
-                fe.*,
-                s.student_name
-
-            FROM face_embeddings fe
-
-            JOIN students s
-                ON s.student_id = fe.student_id
-
-            WHERE fe.is_active = 1
-            """
-        ).fetchall()
-
-        return [
-            dict(row)
-            for row in rows
-        ]
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# FACULTY FUNCTIONS
-# ============================================================
-
-def create_faculty(
-    faculty_id,
-    name,
-    email=None,
-    phone=None,
-    designation=None,
-    department_id=None,
-    user_id=None
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        cursor = conn.execute(
-            """
-            INSERT INTO faculty (
-                faculty_id,
-                name,
-                email,
-                phone,
-                designation,
-                department_id,
-                user_id
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                faculty_id.strip(),
-                name.strip(),
-                email,
-                phone,
-                designation,
-                department_id,
-                user_id
-            )
+    cursor.execute(
+        """
+        INSERT INTO attendance (
+            student_id,
+            student_name,
+            date,
+            time
         )
-
-        conn.commit()
-
-        return cursor.lastrowid
-
-    finally:
-
-        conn.close()
-
-
-def get_all_faculty():
-
-    conn = get_db_connection()
-
-    try:
-
-        rows = conn.execute(
-            """
-            SELECT
-                f.*,
-                d.department_name
-
-            FROM faculty f
-
-            LEFT JOIN departments d
-                ON d.id = f.department_id
-
-            ORDER BY
-                f.name
-            """
-        ).fetchall()
-
-        return [
-            dict(row)
-            for row in rows
-        ]
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# FACULTY SUBJECT ASSIGNMENT
-# ============================================================
-
-def assign_subject_to_faculty(
-    faculty_id,
-    subject_id,
-    academic_year=None
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        cursor = conn.execute(
-            """
-            INSERT INTO faculty_subjects (
-                faculty_id,
-                subject_id,
-                academic_year
-            )
-            VALUES (?, ?, ?)
-            """,
-            (
-                faculty_id,
-                subject_id,
-                academic_year
-            )
-        )
-
-        conn.commit()
-
-        return cursor.lastrowid
-
-    finally:
-
-        conn.close()
-
-
-def get_faculty_subjects(
-    faculty_id
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        rows = conn.execute(
-            """
-            SELECT
-
-                fs.*,
-
-                s.subject_code,
-                s.subject_name,
-
-                sem.semester_number,
-
-                c.course_name,
-
-                d.department_name
-
-            FROM faculty_subjects fs
-
-            JOIN subjects s
-                ON s.id = fs.subject_id
-
-            JOIN semesters sem
-                ON sem.id = s.semester_id
-
-            JOIN courses c
-                ON c.id = sem.course_id
-
-            JOIN departments d
-                ON d.id = c.department_id
-
-            WHERE fs.faculty_id = ?
-
-            ORDER BY
-                c.course_name,
-                sem.semester_number,
-                s.subject_name
-            """,
-            (
-                faculty_id,
-            )
-        ).fetchall()
-
-        return [
-            dict(row)
-            for row in rows
-        ]
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# LECTURE SESSION FUNCTIONS
-# ============================================================
-
-def create_session(
-    subject_id,
-    faculty_id,
-    session_date,
-    start_time,
-    end_time,
-    attendance_start_time=None,
-    attendance_end_time=None,
-    division=None
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        subject = conn.execute(
-            """
-            SELECT subject_code
-            FROM subjects
-            WHERE id = ?
-            """,
-            (
-                subject_id,
-            )
-        ).fetchone()
-
-
-        subject_code = (
-            subject["subject_code"]
-            if subject
-            else None
-        )
-
-
-        cursor = conn.execute(
-            """
-            INSERT INTO sessions (
-                subject_id,
-                subject_code,
-                faculty_id,
-                division,
-                session_date,
-                start_time,
-                end_time,
-                attendance_start_time,
-                attendance_end_time,
-                status
-            )
-            VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, 'SCHEDULED'
-            )
-            """,
-            (
-                subject_id,
-                subject_code,
-                faculty_id,
-                division,
-                session_date,
-                start_time,
-                end_time,
-                attendance_start_time,
-                attendance_end_time
-            )
-        )
-
-        conn.commit()
-
-        return cursor.lastrowid
-
-    finally:
-
-        conn.close()
-
-
-def get_session(
-    session_id
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        row = conn.execute(
-            """
-            SELECT
-
-                se.*,
-
-                s.subject_name,
-                s.subject_code,
-
-                f.faculty_id,
-                f.name AS faculty_name
-
-            FROM sessions se
-
-            LEFT JOIN subjects s
-                ON s.id = se.subject_id
-
-            JOIN faculty f
-                ON f.id = se.faculty_id
-
-            WHERE se.id = ?
-
-            """,
-            (
-                session_id,
-            )
-        ).fetchone()
-
-        return dict(row) if row else None
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# SESSION ATTENDANCE
-# ============================================================
-
-def mark_session_attendance(
-    session_id,
-    student_id,
-    status="PRESENT",
-    face_distance=None,
-    method="FACE"
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        cursor = conn.execute(
-            """
-            INSERT INTO session_attendance (
-                session_id,
-                student_id,
-                status,
-                face_distance,
-                method
-            )
-            VALUES (?, ?, ?, ?, ?)
-
-            ON CONFLICT (
-                session_id,
-                student_id
-            )
-            DO UPDATE SET
-
-                status = excluded.status,
-
-                marked_at =
-                    CURRENT_TIMESTAMP,
-
-                face_distance =
-                    excluded.face_distance,
-
-                method =
-                    excluded.method
-            """,
-            (
-                session_id,
-                student_id,
-                status,
-                face_distance,
-                method
-            )
-        )
-
-        conn.commit()
-
-        return cursor.lastrowid
-
-    finally:
-
-        conn.close()
-
-
-def get_session_attendance(
-    session_id
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        rows = conn.execute(
-            """
-            SELECT
-
-                sa.*,
-
-                s.student_name,
-
-                s.roll_number,
-
-                sc.division
-
-            FROM session_attendance sa
-
-            JOIN students s
-                ON s.student_id = sa.student_id
-
-            LEFT JOIN student_courses sc
-                ON sc.student_id = s.student_id
-
-            WHERE sa.session_id = ?
-
-            ORDER BY
-                sa.marked_at
-            """,
-            (
-                session_id,
-            )
-        ).fetchall()
-
-        return [
-            dict(row)
-            for row in rows
-        ]
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# LEGACY ATTENDANCE FUNCTIONS
-# These remain for your existing application.
-# ============================================================
-
-def mark_attendance(
-    student_id,
-    student_name,
-    date_str,
-    time_str,
-    status="Present"
-):
-
-    conn = get_db_connection()
-
-    try:
-
-        conn.execute(
-            """
-            INSERT INTO attendance (
-                student_id,
-                student_name,
-                date,
-                time,
-                status
-            )
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (
-                student_id.strip(),
-                student_name.strip(),
-                date_str,
-                time_str,
-                status
-            )
-        )
-
-        conn.commit()
-
-        return True
-
-    finally:
-
-        conn.close()
+        VALUES (?, ?, ?, ?)
+        """,
+        (student_id, student_name, date, time),
+    )
+
+    conn.commit()
+    conn.close()
+
+    return True
 
 
 def get_attendance_records(
@@ -2397,164 +1100,149 @@ def get_attendance_records(
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        query = """
-            SELECT *
-            FROM attendance
-            WHERE 1 = 1
-        """
+    query = """
+        SELECT
+            id,
+            student_id,
+            student_name,
+            date,
+            time
 
-        params = []
+        FROM attendance
 
+        WHERE 1 = 1
+    """
 
-        if filter_date:
+    params = []
 
-            query += """
-                AND date = ?
-            """
-
-            params.append(
-                filter_date.strip()
-            )
-
-
-        if search_query:
-
-            query += """
-                AND (
-                    student_id LIKE ?
-                    OR student_name LIKE ?
-                )
-            """
-
-            search_like = (
-                f"%{search_query.strip()}%"
-            )
-
-            params.extend([
-                search_like,
-                search_like
-            ])
-
+    if filter_date:
 
         query += """
-            ORDER BY id DESC
+            AND date = ?
         """
 
+        params.append(
+            filter_date
+        )
 
-        rows = conn.execute(
-            query,
-            params
-        ).fetchall()
+    if search_query:
 
+        query += """
+            AND (
+                student_id LIKE ?
+                OR
+                student_name LIKE ?
+            )
+        """
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        search_value = (
+            f"%{search_query}%"
+        )
 
-    finally:
+        params.append(
+            search_value
+        )
 
-        conn.close()
+        params.append(
+            search_value
+        )
+
+    query += """
+        ORDER BY id DESC
+    """
+
+    cursor.execute(
+        query,
+        params
+    )
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return [
+        dict(row)
+        for row in rows
+    ]
 
 
 def check_face_punch_exists(
     student_id,
-    date_str
+    date
 ):
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        row = conn.execute(
-            """
-            SELECT 1
-            FROM attendance
+    cursor.execute(
+        """
+        SELECT id
 
-            WHERE student_id = ?
+        FROM attendance
+
+        WHERE
+            student_id = ?
             AND date = ?
 
-            LIMIT 1
-            """,
-            (
-                student_id,
-                date_str
-            )
-        ).fetchone()
+        LIMIT 1
+        """,
+        (
+            student_id,
+            date
+        )
+    )
 
-        return row is not None
+    row = cursor.fetchone()
 
-    finally:
+    conn.close()
 
-        conn.close()
+    return row is not None
 
+
+# ============================================================
+# SUBJECT ATTENDANCE FUNCTIONS
+# ============================================================
 
 def mark_subject_attendance(
     student_id,
     subject_code,
-    date_str,
+    date,
     status
 ):
 
-    if (
-        status == "Present"
-        and
-        not check_face_punch_exists(
-            student_id,
-            date_str
-        )
-    ):
-
-        raise ValueError(
-            f"Student ID {student_id} "
-            f"has not punched their face today!"
-        )
-
-
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        conn.execute(
-            """
-            INSERT INTO subject_attendance (
-                student_id,
-                subject_code,
-                date,
-                status
-            )
-            VALUES (?, ?, ?, ?)
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO
+        subject_attendance (
 
-            ON CONFLICT (
-                student_id,
-                subject_code,
-                date
-            )
-            DO UPDATE SET
-                status = excluded.status
-            """,
-            (
-                student_id,
-                subject_code,
-                date_str,
-                status
-            )
+            student_id,
+            subject_code,
+            date,
+            status
+
         )
 
-        conn.commit()
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            student_id,
+            subject_code,
+            date,
+            status
+        )
+    )
 
-        return True
+    conn.commit()
 
-    finally:
+    conn.close()
 
-        conn.close()
-
-
-# ============================================================
-# STUDENT ATTENDANCE REPORT
-# ============================================================
 
 def get_student_subject_summary(
     student_id
@@ -2562,143 +1250,119 @@ def get_student_subject_summary(
 
     conn = get_db_connection()
 
-    try:
+    cursor = conn.cursor()
 
-        summary = []
+    cursor.execute(
+        """
+        SELECT
 
+            subject_code,
 
-        rows = conn.execute(
-            """
-            SELECT
+            COUNT(*) AS total_classes,
 
-                s.id,
-                s.subject_code,
-                s.subject_name
+            SUM(
+                CASE
+                    WHEN status = 'Present'
+                    THEN 1
+                    ELSE 0
+                END
+            ) AS present_count
 
-            FROM subjects s
+        FROM subject_attendance
 
-            JOIN semesters sem
-                ON sem.id = s.semester_id
+        WHERE student_id = ?
 
-            JOIN student_courses sc
-                ON sc.semester_id = sem.id
+        GROUP BY subject_code
+        """,
+        (
+            student_id,
+        )
+    )
 
-            WHERE sc.student_id = ?
+    rows = cursor.fetchall()
 
-            ORDER BY s.subject_name
-            """,
-            (
-                student_id,
-            )
-        ).fetchall()
+    conn.close()
 
+    result = []
 
-        for subject in rows:
+    for row in rows:
 
-            total = conn.execute(
-                """
-                SELECT COUNT(*)
-
-                FROM session_attendance sa
-
-                JOIN sessions se
-                    ON se.id = sa.session_id
-
-                WHERE
-                    sa.student_id = ?
-                    AND se.subject_id = ?
-                """,
-                (
-                    student_id,
-                    subject["id"]
-                )
-            ).fetchone()[0]
-
-
-            present = conn.execute(
-                """
-                SELECT COUNT(*)
-
-                FROM session_attendance sa
-
-                JOIN sessions se
-                    ON se.id = sa.session_id
-
-                WHERE
-                    sa.student_id = ?
-                    AND se.subject_id = ?
-
-                    AND sa.status = 'PRESENT'
-                """,
-                (
-                    student_id,
-                    subject["id"]
-                )
-            ).fetchone()[0]
-
-
-            percentage = (
-                round(
-                    (present / total) * 100,
-                    2
-                )
-                if total
-                else 0
-            )
-
-
-            summary.append({
-
-                "subject_code":
-                    subject["subject_code"],
-
-                "subject_name":
-                    subject["subject_name"],
-
-                "total_lectures":
-                    total,
-
-                "present_lectures":
-                    present,
-
-                "attendance_percentage":
-                    percentage
-            })
-
-
-        return summary
-
-    finally:
-
-        conn.close()
-
-
-# ============================================================
-# UTILITY
-# ============================================================
-
-def get_day_name(
-    date_str
-):
-
-    try:
-
-        dt = datetime.strptime(
-            date_str,
-            "%d-%m-%Y"
+        data = dict(
+            row
         )
 
-        return dt.strftime("%a")
+        total = data[
+            "total_classes"
+        ]
 
-    except Exception:
+        present = (
+            data[
+                "present_count"
+            ]
+            or 0
+        )
 
-        return "Day"
+        percentage = (
+            round(
+                (
+                    present / total
+                ) * 100,
+                2
+            )
+            if total > 0
+            else 0
+        )
+
+        result.append({
+
+            "subject_code":
+                data["subject_code"],
+
+            "total_classes":
+                total,
+
+            "present_count":
+                present,
+
+            "percentage":
+                percentage
+        })
+
+    return result
 
 
-# ============================================================
-# MAIN
-# ============================================================
+def get_student_attendance_matrix(
+    student_id
+):
 
-if __name__ == "__main__":
+    conn = get_db_connection()
 
-    init_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+
+            subject_code,
+            date,
+            status
+
+        FROM subject_attendance
+
+        WHERE student_id = ?
+
+        ORDER BY date DESC
+        """,
+        (
+            student_id,
+        )
+    )
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return [
+        dict(row)
+        for row in rows
+    ]

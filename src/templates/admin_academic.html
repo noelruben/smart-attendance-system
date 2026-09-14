@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Departments | Smart Attendance</title>
+
+    <!-- Shared Admin Portal styling -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+
+    <!-- Department page styling -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='admin_academic.css') }}"
+    />
+  </head>
+
+  <body>
+    <div class="dashboard-layout">
+      <!-- =====================================================
+         SHARED ADMIN SIDEBAR
+         ===================================================== -->
+
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-logo">SA</div>
+
+          <div>
+            <h2>Smart Attendance</h2>
+            <span>University Portal</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-menu">
+          <a href="{{ url_for('admin_dashboard') }}"> 📊 Dashboard </a>
+
+          <a href="{{ url_for('admin_academic') }}" class="active">
+            🏢 Departments
+          </a>
+
+          <a href="{{ url_for('admin_courses') }}">
+            📚 Courses & Subjects
+            </a>
+
+          <a href="#"> 🎓 Students </a>
+
+          <a href="#"> 👨‍🏫 Faculty </a>
+
+          <a href="#"> 🧠 Face Biometrics </a>
+
+          <a href="#"> 📅 Attendance Sessions </a>
+
+          <a href="#"> 📈 Reports & Analytics </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="admin-user">
+            <div class="admin-avatar">{{ (username or "A")[0]|upper }}</div>
+
+            <div>
+              <strong>{{ username or "Admin" }}</strong>
+              <span>System Administrator</span>
+            </div>
+          </div>
+
+          <a href="{{ url_for('logout') }}" class="logout-button"> Logout </a>
+        </div>
+      </aside>
+
+      <!-- =====================================================
+         MAIN CONTENT
+         ===================================================== -->
+
+      <main class="dashboard-main">
+        <!-- TOP BAR -->
+
+        <div class="dashboard-topbar">
+          <div class="page-title">
+            <div class="page-eyebrow">ADMINISTRATION</div>
+
+            <h1>Departments</h1>
+
+            <p>
+              Create and manage the academic departments used throughout your
+              university.
+            </p>
+          </div>
+
+          <div class="user-area">
+            <div class="user-profile">
+              <div class="user-avatar">{{ (username or "A")[0]|upper }}</div>
+
+              <div class="user-details">
+                <strong>{{ username or "Admin" }}</strong>
+                <span>System Administrator</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =====================================================
+             ACADEMIC HIERARCHY
+             ===================================================== -->
+
+        <section class="academic-hero">
+          <div>
+            <div class="academic-label">ACADEMIC SETUP</div>
+
+            <h2>Academic Structure</h2>
+
+            <p>
+              Departments are the first level of your university's academic
+              hierarchy.
+            </p>
+          </div>
+
+          <div class="academic-flow">
+            <span class="flow-active">Department</span>
+            <b>→</b>
+
+            <span>Course</span>
+            <b>→</b>
+
+            <span>Semester</span>
+            <b>→</b>
+
+            <span>Subject</span>
+          </div>
+        </section>
+
+        <!-- =====================================================
+             DEPARTMENT MANAGEMENT
+             ===================================================== -->
+
+        <section class="department-layout">
+          <!-- =================================================
+                 ADD / EDIT DEPARTMENT
+                 ================================================= -->
+
+          <div class="dashboard-panel department-form-panel">
+            <div class="panel-header">
+              <div>
+                <h2 id="form-title">Add Department</h2>
+
+                <p>Create a new academic department.</p>
+              </div>
+
+              <button
+                id="cancel-edit"
+                class="secondary-button hidden"
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <form id="department-form">
+              <input type="hidden" id="department-id" />
+
+              <div class="form-group">
+                <label for="department-code"> Department Code </label>
+
+                <input
+                  id="department-code"
+                  maxlength="30"
+                  placeholder="e.g. CSE"
+                  autocomplete="off"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="department-name"> Department Name </label>
+
+                <input
+                  id="department-name"
+                  maxlength="120"
+                  placeholder="e.g. Computer Science & Engineering"
+                  autocomplete="off"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="department-description"> Description </label>
+
+                <textarea
+                  id="department-description"
+                  rows="4"
+                  placeholder="Optional department description"
+                ></textarea>
+              </div>
+
+              <div id="status-wrap" class="form-group hidden">
+                <label for="department-status"> Status </label>
+
+                <select id="department-status">
+                  <option value="ACTIVE">Active</option>
+
+                  <option value="INACTIVE">Inactive</option>
+                </select>
+              </div>
+
+              <button class="primary-button" type="submit" id="submit-text">
+                Create Department
+              </button>
+            </form>
+
+            <div id="message" class="department-message"></div>
+          </div>
+
+          <!-- =================================================
+                 DEPARTMENT LIST
+                 ================================================= -->
+
+          <div class="dashboard-panel department-list-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Departments</h2>
+
+                <p id="department-count">Loading...</p>
+              </div>
+
+              <button
+                class="secondary-button"
+                type="button"
+                onclick="loadDepartments()"
+              >
+                ↻ Refresh
+              </button>
+            </div>
+
+            <div class="department-table-wrap">
+              <table class="department-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody id="department-table">
+                  <tr>
+                    <td colspan="5" class="department-empty">
+                      Loading departments...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- =========================================================
+     DEPARTMENT JAVASCRIPT
+     ========================================================= -->
+
+    <script>
+      let departments = [];
+
+      const form = document.getElementById("department-form");
+
+      const idInput = document.getElementById("department-id");
+
+      const codeInput = document.getElementById("department-code");
+
+      const nameInput = document.getElementById("department-name");
+
+      const descriptionInput = document.getElementById(
+        "department-description",
+      );
+
+      const statusInput = document.getElementById("department-status");
+
+      const statusWrap = document.getElementById("status-wrap");
+
+      const formTitle = document.getElementById("form-title");
+
+      const submitButton = document.getElementById("submit-text");
+
+      const cancelEdit = document.getElementById("cancel-edit");
+
+      const message = document.getElementById("message");
+
+      const table = document.getElementById("department-table");
+
+      const count = document.getElementById("department-count");
+
+      /* =========================================================
+   MESSAGE
+   ========================================================= */
+
+      function showMessage(text, type = "success") {
+        message.textContent = text;
+
+        message.className = "department-message " + type;
+
+        setTimeout(() => {
+          message.textContent = "";
+
+          message.className = "department-message";
+        }, 4500);
+      }
+
+      /* =========================================================
+   RESET FORM
+   ========================================================= */
+
+      function resetForm() {
+        form.reset();
+
+        idInput.value = "";
+
+        statusInput.value = "ACTIVE";
+
+        formTitle.textContent = "Add Department";
+
+        submitButton.textContent = "Create Department";
+
+        statusWrap.classList.add("hidden");
+
+        cancelEdit.classList.add("hidden");
+      }
+
+      /* =========================================================
+   EDIT DEPARTMENT
+   ========================================================= */
+
+      function editDepartment(id) {
+        const department = departments.find(
+          (item) => Number(item.id) === Number(id),
+        );
+
+        if (!department) {
+          return;
+        }
+
+        idInput.value = department.id;
+
+        codeInput.value = department.department_code || "";
+
+        nameInput.value = department.department_name || "";
+
+        descriptionInput.value = department.description || "";
+
+        statusInput.value = department.status || "ACTIVE";
+
+        formTitle.textContent = "Edit Department";
+
+        submitButton.textContent = "Save Changes";
+
+        statusWrap.classList.remove("hidden");
+
+        cancelEdit.classList.remove("hidden");
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }
+
+      /* =========================================================
+   ESCAPE HTML
+   ========================================================= */
+
+      function esc(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      /* =========================================================
+   DELETE DEPARTMENT
+   ========================================================= */
+
+      async function deleteDepartment(id, name) {
+        if (
+          !confirm(
+            `Delete "${name}"?\n\n` +
+              `If this department is already being used ` +
+              `by courses, deletion will be blocked.`,
+          )
+        ) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/admin/departments/${id}`, {
+            method: "DELETE",
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || "Delete failed.");
+          }
+
+          showMessage(data.message || "Department deleted successfully.");
+
+          await loadDepartments();
+        } catch (error) {
+          showMessage(error.message, "error");
+        }
+      }
+
+      /* =========================================================
+   RENDER DEPARTMENTS
+   ========================================================= */
+
+      function renderDepartments() {
+        count.textContent =
+          `${departments.length} department` +
+          `${departments.length === 1 ? "" : "s"} configured`;
+
+        if (!departments.length) {
+          table.innerHTML = `
+            <tr>
+                <td
+                    colspan="5"
+                    class="department-empty"
+                >
+                    <div class="empty-icon">🏢</div>
+
+                    <strong>
+                        No departments yet
+                    </strong>
+
+                    <span>
+                        Create your first department
+                        using the form.
+                    </span>
+                </td>
+            </tr>
+        `;
+
+          return;
+        }
+
+        table.innerHTML = departments
+          .map((department) => {
+            const status = (department.status || "ACTIVE").toUpperCase();
+
+            const created = department.created_at
+              ? esc(department.created_at.split(" ")[0])
+              : "—";
+
+            const safeName = String(department.department_name || "")
+              .replaceAll("\\", "\\\\")
+              .replaceAll("'", "\\'");
+
+            return `
+                <tr>
+
+                    <td>
+                        <span class="department-code-badge">
+                            ${esc(department.department_code)}
+                        </span>
+                    </td>
+
+
+                    <td>
+
+                        <div class="department-name">
+                            ${esc(department.department_name)}
+                        </div>
+
+                        <div class="department-description">
+                            ${esc(department.description || "No description")}
+                        </div>
+
+                    </td>
+
+
+                    <td>
+
+                        <span
+                            class="department-status
+                            ${status.toLowerCase()}"
+                        >
+                            ${status}
+                        </span>
+
+                    </td>
+
+
+                    <td>
+                        ${created}
+                    </td>
+
+
+                    <td>
+
+                        <div class="department-actions">
+
+                            <button
+                                type="button"
+                                onclick="editDepartment(
+                                    ${Number(department.id)}
+                                )"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                type="button"
+                                class="delete-action"
+                                onclick="deleteDepartment(
+                                    ${Number(department.id)},
+                                    '${safeName}'
+                                )"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+            `;
+          })
+          .join("");
+      }
+
+      /* =========================================================
+   LOAD DEPARTMENTS
+   ========================================================= */
+
+      async function loadDepartments() {
+        table.innerHTML = `
+        <tr>
+            <td
+                colspan="5"
+                class="department-empty"
+            >
+                Loading departments...
+            </td>
+        </tr>
+    `;
+
+        try {
+          const response = await fetch("/api/admin/departments");
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || "Could not load departments.");
+          }
+
+          departments = data.departments || [];
+
+          renderDepartments();
+        } catch (error) {
+          table.innerHTML = `
+            <tr>
+                <td
+                    colspan="5"
+                    class="department-empty error-text"
+                >
+                    ${esc(error.message)}
+                </td>
+            </tr>
+        `;
+
+          count.textContent = "Unable to load";
+        }
+      }
+
+      /* =========================================================
+   FORM SUBMIT
+   ========================================================= */
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const id = idInput.value.trim();
+
+        const payload = {
+          department_code: codeInput.value.trim(),
+
+          department_name: nameInput.value.trim(),
+
+          description: descriptionInput.value.trim(),
+
+          status: statusInput.value,
+        };
+
+        const url = id
+          ? `/api/admin/departments/${id}`
+          : "/api/admin/departments";
+
+        const method = id ? "PUT" : "POST";
+
+        submitButton.disabled = true;
+
+        const originalText = submitButton.textContent;
+
+        submitButton.textContent = id ? "Saving..." : "Creating...";
+
+        try {
+          const response = await fetch(url, {
+            method: method,
+
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || "Request failed.");
+          }
+
+          showMessage(
+            data.message ||
+              (id
+                ? "Department updated successfully."
+                : "Department created successfully."),
+          );
+
+          resetForm();
+
+          await loadDepartments();
+        } catch (error) {
+          showMessage(error.message, "error");
+        } finally {
+          submitButton.disabled = false;
+
+          submitButton.textContent = originalText;
+        }
+      });
+
+      cancelEdit.addEventListener("click", resetForm);
+
+      /* =========================================================
+   INITIAL LOAD
+   ========================================================= */
+
+      loadDepartments();
+    </script>
+  </body>
+</html>

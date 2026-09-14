@@ -1,69 +1,118 @@
 from functools import wraps
 
-from flask import session, redirect, url_for, flash
-from werkzeug.security import check_password_hash
+from flask import (
+    session,
+    redirect,
+    url_for,
+    flash
+)
 
-from src.database import get_user_by_username
+from werkzeug.security import (
+    check_password_hash
+)
+
+from src.database import (
+    get_user_by_username
+)
 
 
-def authenticate_user(username, password, expected_role=None):
-    """
-    Authenticate a user.
+# ============================================================
+# AUTHENTICATE USER
+# ============================================================
 
-    expected_role can be:
-    ADMIN
-    FACULTY
-    STUDENT
-    """
+def authenticate_user(
+    username,
+    password,
+    expected_role=None
+):
 
-    username = str(username).strip()
+    username = str(
+        username
+    ).strip()
 
-    user = get_user_by_username(username)
+    user = get_user_by_username(
+        username
+    )
 
     if not user:
+
         return None
 
-    if not user.get("is_active"):
+    if not user.get(
+        "is_active"
+    ):
+
         return None
 
-    if expected_role and user["role"] != expected_role:
+    if (
+        expected_role
+        and
+        user["role"] != expected_role
+    ):
+
         return None
 
     if not check_password_hash(
         user["password_hash"],
         password
     ):
+
         return None
 
     return user
 
 
-def login_user(user):
-    """
-    Store logged-in user information in Flask session.
-    """
+# ============================================================
+# LOGIN USER
+# ============================================================
+
+def login_user(
+    user
+):
 
     session.clear()
 
-    session["user_id"] = user["id"]
-    session["username"] = user["username"]
-    session["role"] = user["role"]
+    session[
+        "user_id"
+    ] = user["id"]
 
+    session[
+        "username"
+    ] = user["username"]
+
+    session[
+        "role"
+    ] = user["role"]
+
+
+# ============================================================
+# LOGOUT USER
+# ============================================================
 
 def logout_user():
-    """
-    Clear the current session.
-    """
 
     session.clear()
 
 
-def login_required(view):
+# ============================================================
+# LOGIN REQUIRED
+# ============================================================
+
+def login_required(
+    view
+):
 
     @wraps(view)
-    def wrapped_view(*args, **kwargs):
 
-        if "user_id" not in session:
+    def wrapped_view(
+        *args,
+        **kwargs
+    ):
+
+        if (
+            "user_id"
+            not in session
+        ):
 
             flash(
                 "Please login to access this page.",
@@ -71,41 +120,74 @@ def login_required(view):
             )
 
             return redirect(
-                url_for("home")
+                url_for(
+                    "home"
+                )
             )
 
-        return view(*args, **kwargs)
+        return view(
+            *args,
+            **kwargs
+        )
 
     return wrapped_view
 
 
-def role_required(*allowed_roles):
+# ============================================================
+# ROLE REQUIRED
+# ============================================================
 
-    def decorator(view):
+def role_required(
+    *allowed_roles
+):
+
+    def decorator(
+        view
+    ):
 
         @wraps(view)
-        def wrapped_view(*args, **kwargs):
 
-            if "user_id" not in session:
+        def wrapped_view(
+            *args,
+            **kwargs
+        ):
+
+            if (
+                "user_id"
+                not in session
+            ):
 
                 return redirect(
-                    url_for("home")
+                    url_for(
+                        "home"
+                    )
                 )
 
-            user_role = session.get("role")
+            user_role = session.get(
+                "role"
+            )
 
-            if user_role not in allowed_roles:
+            if (
+                user_role
+                not in allowed_roles
+            ):
 
                 flash(
-                    "You do not have permission to access this page.",
+                    "You do not have permission "
+                    "to access this page.",
                     "danger"
                 )
 
                 return redirect(
-                    url_for("dashboard")
+                    url_for(
+                        "dashboard"
+                    )
                 )
 
-            return view(*args, **kwargs)
+            return view(
+                *args,
+                **kwargs
+            )
 
         return wrapped_view
 

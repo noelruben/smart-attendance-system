@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <html lang="en">
 
@@ -30,29 +30,37 @@
 <div class="dashboard-layout">
 
 
-    <!-- =================================================
+    <!-- =====================================================
          SIDEBAR
-         ================================================= -->
+    ====================================================== -->
 
     <aside class="sidebar">
 
 
+        <!-- BRAND -->
+
         <div class="brand">
 
             <div class="brand-logo">
+
                 SA
+
             </div>
 
 
             <div>
 
                 <h2>
+
                     Smart Attendance
+
                 </h2>
 
 
                 <span>
+
                     University Portal
+
                 </span>
 
             </div>
@@ -60,54 +68,89 @@
         </div>
 
 
+
         <!-- MENU -->
 
         <nav class="sidebar-menu">
 
+
             <a
-                href="#"
+                href="{{ url_for('admin_dashboard') }}"
                 class="active"
             >
+
                 📊 Dashboard
+
             </a>
 
 
-            <a href="#">
+
+            <a
+                href="{{ url_for('admin_academic') }}"
+            >
+
                 🏢 Departments
+
             </a>
 
 
-            <a href="#">
+
+            <!-- IMPORTANT COURSE LINK -->
+
+            <a
+                href="{{ url_for('admin_courses') }}"
+            >
+
                 📚 Courses & Subjects
+
             </a>
 
 
+
             <a href="#">
+
                 🎓 Students
+
             </a>
 
 
+
             <a href="#">
+
                 👨‍🏫 Faculty
+
             </a>
 
 
+
             <a href="#">
+
                 🧠 Face Biometrics
+
             </a>
 
 
+
             <a href="#">
+
                 📅 Attendance Sessions
+
             </a>
+
 
 
             <a href="#">
+
                 📈 Reports & Analytics
+
             </a>
+
 
         </nav>
 
+
+
+        <!-- LOGOUT -->
 
         <div class="sidebar-footer">
 
@@ -115,7 +158,9 @@
                 href="{{ url_for('logout') }}"
                 class="logout-button"
             >
+
                 Logout
+
             </a>
 
         </div>
@@ -124,9 +169,10 @@
     </aside>
 
 
-    <!-- =================================================
+
+    <!-- =====================================================
          MAIN CONTENT
-         ================================================= -->
+    ====================================================== -->
 
     <main class="dashboard-main">
 
@@ -139,15 +185,20 @@
             <div class="page-title">
 
                 <h1>
+
                     Admin Dashboard
+
                 </h1>
 
 
                 <p>
+
                     Manage your university attendance ecosystem
+
                 </p>
 
             </div>
+
 
 
             <div class="user-area">
@@ -157,33 +208,44 @@
 
 
                     <div class="user-avatar">
+
                         A
+
                     </div>
+
 
 
                     <div class="user-details">
 
                         <strong>
+
                             {{ username }}
+
                         </strong>
 
 
                         <span>
+
                             System Administrator
+
                         </span>
 
                     </div>
 
+
                 </div>
 
+
             </div>
+
 
         </div>
 
 
+
         <!-- =================================================
              STATISTICS
-             ================================================= -->
+        ================================================== -->
 
         <div class="stats-grid">
 
@@ -191,98 +253,142 @@
             <div class="stat-card">
 
                 <div class="stat-label">
+
                     Total Students
+
                 </div>
 
 
-                <div class="stat-value">
+                <div
+                    class="stat-value"
+                    id="totalStudents"
+                >
+
                     --
+
                 </div>
 
 
                 <div class="stat-icon">
+
                     🎓
+
                 </div>
 
             </div>
 
 
+
             <div class="stat-card">
 
                 <div class="stat-label">
+
                     Total Faculty
+
                 </div>
 
 
                 <div class="stat-value">
+
                     --
+
                 </div>
 
 
                 <div class="stat-icon">
+
                     👨‍🏫
+
                 </div>
 
             </div>
 
 
+
             <div class="stat-card">
 
                 <div class="stat-label">
+
                     Active Courses
+
                 </div>
 
 
-                <div class="stat-value">
+                <div
+                    class="stat-value"
+                    id="activeCourses"
+                >
+
                     --
+
                 </div>
 
 
                 <div class="stat-icon">
+
                     📚
+
                 </div>
 
             </div>
 
 
+
             <div class="stat-card">
 
                 <div class="stat-label">
+
                     Today's Sessions
+
                 </div>
 
 
-                <div class="stat-value">
+                <div
+                    class="stat-value"
+                    id="todaySessions"
+                >
+
                     --
+
                 </div>
 
 
                 <div class="stat-icon">
+
                     📅
+
                 </div>
 
             </div>
 
 
         </div>
+
 
 
         <!-- =================================================
              MANAGEMENT SECTION
-             ================================================= -->
+        ================================================== -->
 
         <div class="section-title">
 
+
             <h2>
+
                 System Management
+
             </h2>
 
 
             <p>
+
                 Configure and manage your attendance platform
+
             </p>
 
+
         </div>
+
 
 
         <div class="dashboard-grid">
@@ -292,69 +398,85 @@
 
             <div class="dashboard-card">
 
+
                 <h2>
+
                     🏢 Departments
+
                 </h2>
 
 
                 <p>
 
-                    Create branches and departments
-                    for your university.
+                    Create branches and departments for your university.
 
                 </p>
 
 
                 <a
-                    href="#"
+                    href="{{ url_for('admin_academic') }}"
                     class="dashboard-action"
                 >
+
                     Manage Departments →
+
                 </a>
 
+
             </div>
+
 
 
             <!-- COURSES -->
 
             <div class="dashboard-card">
 
+
                 <h2>
+
                     📚 Courses & Subjects
+
                 </h2>
 
 
                 <p>
 
-                    Create courses, semesters,
-                    subjects and curriculum.
+                    Create courses and assign them to specific departments,
+                    academic years and semesters.
 
                 </p>
 
 
                 <a
-                    href="#"
+                    href="{{ url_for('admin_courses') }}"
                     class="dashboard-action"
                 >
+
                     Manage Courses →
+
                 </a>
 
+
             </div>
+
 
 
             <!-- STUDENTS -->
 
             <div class="dashboard-card">
 
+
                 <h2>
+
                     🎓 Student Management
+
                 </h2>
 
 
                 <p>
 
-                    Register students, assign courses
-                    and configure face biometrics.
+                    Register students, assign courses and configure
+                    face biometrics.
 
                 </p>
 
@@ -363,25 +485,31 @@
                     href="#"
                     class="dashboard-action"
                 >
+
                     Manage Students →
+
                 </a>
 
+
             </div>
+
 
 
             <!-- FACULTY -->
 
             <div class="dashboard-card">
 
+
                 <h2>
+
                     👨‍🏫 Faculty Management
+
                 </h2>
 
 
                 <p>
 
-                    Register faculty and assign
-                    departments and subjects.
+                    Register faculty and assign departments and subjects.
 
                 </p>
 
@@ -390,25 +518,31 @@
                     href="#"
                     class="dashboard-action"
                 >
+
                     Manage Faculty →
+
                 </a>
+
 
             </div>
 
 
-            <!-- BIOMETRIC -->
+
+            <!-- BIOMETRICS -->
 
             <div class="dashboard-card">
 
+
                 <h2>
+
                     🧠 Face Biometrics
+
                 </h2>
 
 
                 <p>
 
-                    Configure and manage
-                    student face recognition data.
+                    Configure and manage student face recognition data.
 
                 </p>
 
@@ -417,25 +551,31 @@
                     href="#"
                     class="dashboard-action"
                 >
+
                     Manage Biometrics →
+
                 </a>
 
+
             </div>
+
 
 
             <!-- ATTENDANCE -->
 
             <div class="dashboard-card">
 
+
                 <h2>
+
                     📷 Attendance System
+
                 </h2>
 
 
                 <p>
 
-                    Open the AI biometric
-                    attendance camera system.
+                    Open the AI biometric attendance camera system.
 
                 </p>
 
@@ -444,8 +584,11 @@
                     href="{{ url_for('attendance_system') }}"
                     class="dashboard-action"
                 >
+
                     Open Attendance System →
+
                 </a>
+
 
             </div>
 
@@ -457,6 +600,101 @@
 
 
 </div>
+
+
+
+<!-- =========================================================
+     DASHBOARD DATA
+========================================================= -->
+
+<script>
+
+
+async function loadDashboardStats() {
+
+    try {
+
+        const statsResponse =
+            await fetch(
+                "/api/stats",
+                {
+                    cache:
+                        "no-store"
+                }
+            );
+
+
+        const stats =
+            await statsResponse.json();
+
+
+        document.getElementById(
+            "totalStudents"
+        ).textContent =
+            stats.registered_count ?? 0;
+
+
+        document.getElementById(
+            "todaySessions"
+        ).textContent =
+            stats.present_today ?? 0;
+
+
+        const courseResponse =
+            await fetch(
+                "/api/admin/courses",
+                {
+                    cache:
+                        "no-store"
+                }
+            );
+
+
+        const courseResult =
+            await courseResponse.json();
+
+
+        if (
+            courseResult.success
+        ) {
+
+            document.getElementById(
+                "activeCourses"
+            ).textContent =
+                courseResult.courses.length;
+
+        }
+
+        else {
+
+            document.getElementById(
+                "activeCourses"
+            ).textContent =
+                "0";
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Dashboard statistics error:",
+            error
+        );
+
+    }
+
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    loadDashboardStats
+);
+
+
+</script>
 
 
 </body>

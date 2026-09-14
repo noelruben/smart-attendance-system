@@ -1,0 +1,660 @@
+/* =========================================================
+   DEPARTMENT / ACADEMIC MODULE
+   Shared Admin Portal shell comes from style.css
+   ========================================================= */
+
+
+/* =========================================================
+   PAGE EYEBROW
+   ========================================================= */
+
+.page-eyebrow {
+    color: #8ea1ff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    margin-bottom: 8px;
+}
+
+
+/* =========================================================
+   ADMIN USER IN SIDEBAR
+   ========================================================= */
+
+.admin-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 10px;
+    margin-bottom: 6px;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.admin-avatar {
+    width: 34px;
+    height: 34px;
+
+    flex-shrink: 0;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+
+    background: rgba(109, 124, 255, 0.18);
+    color: #cbd2ff;
+
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.admin-user strong,
+.admin-user span {
+    display: block;
+}
+
+.admin-user strong {
+    font-size: 13px;
+    color: #f7f9fc;
+}
+
+.admin-user span {
+    margin-top: 2px;
+    color: #93a4bb;
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   ACADEMIC HERO
+   ========================================================= */
+
+.academic-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 30px;
+
+    padding: 24px;
+
+    margin-bottom: 22px;
+
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(109, 124, 255, 0.12),
+            rgba(56, 189, 248, 0.05)
+        );
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+.academic-label {
+    color: #8ea1ff;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 0.16em;
+
+    margin-bottom: 8px;
+}
+
+.academic-hero h2 {
+    margin: 0 0 7px;
+
+    font-size: 23px;
+
+    letter-spacing: -0.025em;
+}
+
+.academic-hero p {
+    margin: 0;
+
+    color: #93a4bb;
+
+    font-size: 13px;
+}
+
+.academic-flow {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    white-space: nowrap;
+
+    color: #93a4bb;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.academic-flow b {
+    color: #52627d;
+
+    font-size: 15px;
+}
+
+.academic-flow .flow-active {
+    color: #c7d2fe;
+
+    padding: 7px 10px;
+
+    border-radius: 8px;
+
+    background: rgba(109, 124, 255, 0.12);
+}
+
+
+/* =========================================================
+   DEPARTMENT GRID
+   ========================================================= */
+
+.department-layout {
+    display: grid;
+
+    grid-template-columns:
+        minmax(280px, 360px)
+        minmax(0, 1fr);
+
+    gap: 20px;
+
+    align-items: start;
+}
+
+
+/* =========================================================
+   PANELS
+   ========================================================= */
+
+.dashboard-panel {
+    min-width: 0;
+
+    overflow: hidden;
+
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 18px;
+
+    background: rgba(15, 28, 48, 0.84);
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+.panel-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 15px;
+
+    padding: 20px;
+
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.panel-header h2 {
+    margin: 0 0 5px;
+
+    color: #f7f9fc;
+
+    font-size: 18px;
+    letter-spacing: -0.02em;
+}
+
+.panel-header p {
+    margin: 0;
+
+    color: #93a4bb;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.department-form-panel form {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 17px;
+}
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #c7d2e2;
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 10px;
+
+    outline: none;
+
+    color: #f7f9fc;
+
+    background: rgba(3, 10, 20, 0.62);
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #64748b;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: rgba(109, 124, 255, 0.65);
+
+    box-shadow:
+        0 0 0 3px rgba(109, 124, 255, 0.09);
+}
+
+.form-group textarea {
+    min-height: 100px;
+
+    resize: vertical;
+}
+
+.form-group select {
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
+   ========================================================= */
+
+.primary-button {
+    width: 100%;
+
+    padding: 12px 16px;
+
+    border: 0;
+    border-radius: 11px;
+
+    color: #ffffff;
+
+    font-size: 13px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    background:
+        linear-gradient(
+            135deg,
+            #6d7cff,
+            #5364ed
+        );
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.primary-button:hover {
+    transform: translateY(-1px);
+}
+
+.primary-button:disabled {
+    opacity: 0.55;
+
+    cursor: wait;
+
+    transform: none;
+}
+
+
+/* =========================================================
+   SECONDARY BUTTON
+   ========================================================= */
+
+.secondary-button {
+    flex-shrink: 0;
+
+    padding: 9px 13px;
+
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 9px;
+
+    color: #f7f9fc;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    background: rgba(255, 255, 255, 0.04);
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.secondary-button:hover {
+    background: rgba(109, 124, 255, 0.10);
+
+    border-color:
+        rgba(109, 124, 255, 0.30);
+}
+
+.secondary-button.hidden {
+    display: none;
+}
+
+
+/* =========================================================
+   MESSAGES
+   ========================================================= */
+
+.department-message {
+    min-height: 20px;
+
+    padding:
+        0 20px
+        18px;
+
+    font-size: 12px;
+}
+
+.department-message.success {
+    color: #34d399;
+}
+
+.department-message.error {
+    color: #fb7185;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.department-table-wrap {
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+.department-table {
+    width: 100%;
+
+    border-collapse: collapse;
+}
+
+.department-table th,
+.department-table td {
+    padding: 14px 16px;
+
+    text-align: left;
+
+    border-bottom:
+        1px solid rgba(148, 163, 184, 0.12);
+
+    font-size: 12px;
+}
+
+.department-table th {
+    color: #8292aa;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.1em;
+}
+
+.department-table tbody tr {
+    transition:
+        background 0.15s ease;
+}
+
+.department-table tbody tr:hover {
+    background:
+        rgba(109, 124, 255, 0.035);
+}
+
+
+/* =========================================================
+   DEPARTMENT CODE
+   ========================================================= */
+
+.department-code-badge {
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 6px 9px;
+
+    border-radius: 7px;
+
+    color: #c7d2fe;
+
+    font-size: 11px;
+    font-weight: 800;
+
+    background:
+        rgba(109, 124, 255, 0.10);
+}
+
+
+/* =========================================================
+   DEPARTMENT NAME
+   ========================================================= */
+
+.department-name {
+    color: #f7f9fc;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.department-description {
+    max-width: 300px;
+
+    margin-top: 4px;
+
+    color: #71829b;
+
+    font-size: 11px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.department-status {
+    display: inline-flex;
+
+    padding: 5px 9px;
+
+    border-radius: 999px;
+
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.department-status.active {
+    color: #6ee7b7;
+
+    background:
+        rgba(52, 211, 153, 0.10);
+}
+
+.department-status.inactive {
+    color: #fda4af;
+
+    background:
+        rgba(251, 113, 133, 0.10);
+}
+
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.department-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    white-space: nowrap;
+}
+
+.department-actions button {
+    padding: 5px 6px;
+
+    border: 0;
+
+    color: #a5b4fc;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    background: transparent;
+
+    cursor: pointer;
+}
+
+.department-actions button:hover {
+    color: #c7d2fe;
+}
+
+.department-actions .delete-action {
+    color: #fb7185;
+}
+
+.department-actions .delete-action:hover {
+    color: #fda4af;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.department-empty {
+    height: 220px;
+
+    padding: 35px 20px !important;
+
+    text-align: center !important;
+
+    color: #93a4bb;
+}
+
+.department-empty strong {
+    display: block;
+
+    margin-top: 10px;
+
+    color: #c7d2e2;
+
+    font-size: 13px;
+}
+
+.department-empty span {
+    display: block;
+
+    margin-top: 5px;
+
+    font-size: 11px;
+}
+
+.empty-icon {
+    font-size: 28px;
+}
+
+.error-text {
+    color: #fb7185 !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+    .department-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .academic-hero {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .academic-flow {
+        flex-wrap: wrap;
+
+        white-space: normal;
+    }
+}
+
+
+@media (max-width: 700px) {
+
+    .academic-hero {
+        padding: 18px;
+    }
+
+    .department-table th,
+    .department-table td {
+        padding: 12px;
+    }
+
+    .department-description {
+        max-width: 180px;
+    }
+
+    .panel-header {
+        padding: 16px;
+    }
+
+    .department-form-panel form {
+        padding: 16px;
+    }
+
+    .department-message {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
